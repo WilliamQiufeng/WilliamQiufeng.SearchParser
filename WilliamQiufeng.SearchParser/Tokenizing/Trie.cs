@@ -4,7 +4,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Trie
     {
-        private readonly HashSet<string> _candidateKeys = new HashSet<string>();
+        private readonly List<string> _candidateKeys = new List<string>();
         private readonly Dictionary<char, Trie> _next = new Dictionary<char, Trie>();
         public bool IsTerminal => _next.Count == 0;
 
