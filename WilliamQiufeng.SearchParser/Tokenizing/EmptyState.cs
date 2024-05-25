@@ -8,15 +8,81 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         {
             var lookahead = tokenizer.Lookahead();
 
-            // End of query
-            if (lookahead == '\0')
-                return EndState.State;
-            // Discard all whitespaces
-            if (lookahead == ' ')
+            switch (lookahead)
             {
-                tokenizer.Consume();
-                tokenizer.DiscardBuffer();
-                return this;
+                // End of query
+                case '\0':
+                    return EndState.State;
+                // Discard all whitespaces
+                case ' ':
+                    tokenizer.Consume();
+                    tokenizer.DiscardBuffer();
+                    return this;
+                case '=':
+                {
+                    tokenizer.Consume();
+                    if (tokenizer.Lookahead() == '=')
+                        tokenizer.Consume();
+                    tokenizer.EmitToken(TokenKind.Equal);
+                    return this;
+                }
+                case '>':
+                {
+                    tokenizer.Consume();
+                    if (tokenizer.Lookahead() == '=')
+                    {
+                        tokenizer.Consume();
+                        tokenizer.EmitToken(TokenKind.MoreThanOrEqual);
+                    }
+                    else
+                    {
+                        tokenizer.EmitToken(TokenKind.MoreThan);
+                    }
+
+                    return this;
+                }
+                case '<':
+                {
+                    tokenizer.Consume();
+                    if (tokenizer.Lookahead() == '=')
+                    {
+                        tokenizer.Consume();
+                        tokenizer.EmitToken(TokenKind.LessThanOrEqual);
+                    }
+                    else
+                    {
+                        tokenizer.EmitToken(TokenKind.LessThan);
+                    }
+
+                    return this;
+                }
+                case '!':
+                {
+                    tokenizer.Consume();
+                    if (tokenizer.Lookahead() == '=')
+                    {
+                        tokenizer.Consume();
+                        tokenizer.EmitToken(TokenKind.NotEqual);
+                    }
+                    else
+                    {
+                        tokenizer.EmitToken(TokenKind.Not);
+                    }
+
+                    return this;
+                }
+                case '/':
+                case '|':
+                    tokenizer.Consume();
+                    tokenizer.EmitToken(TokenKind.Or);
+                    return this;
+                case ':':
+                    tokenizer.Consume();
+                    tokenizer.EmitToken(TokenKind.Contains);
+                    return this;
+                case '.':
+                    tokenizer.Consume();
+                    return new RealState();
             }
 
             if (lookahead >= '0' && lookahead <= '9')

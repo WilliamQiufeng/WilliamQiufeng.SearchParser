@@ -18,6 +18,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         LessThanOrEqual,
         MoreThanOrEqual,
         Contains,
-        Not
+        Not,
+        Or
     }
 }

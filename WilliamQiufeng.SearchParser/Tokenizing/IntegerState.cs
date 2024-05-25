@@ -14,6 +14,19 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 return EmptyState.State;
             }
 
+            if (lookahead == '%')
+            {
+                tokenizer.Consume();
+                tokenizer.EmitToken(TokenKind.Percentage, _currentInteger);
+                return EmptyState.State;
+            }
+
+            if (lookahead == '.')
+            {
+                tokenizer.Consume();
+                return new RealState();
+            }
+
             if (lookahead < '0' || lookahead > '9')
                 return PlainTextState.State;
 

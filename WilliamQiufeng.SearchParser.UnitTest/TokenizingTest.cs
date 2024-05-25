@@ -45,6 +45,26 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
 {
     new object[] { TokenKind.PlainText, "'aa", 0, "'aa" },
 })]
+[TestFixture("> >= = == < <= | / ! :", new object[]
+{
+    new object[] { TokenKind.MoreThan, ">", 0, default! },
+    new object[] { TokenKind.MoreThanOrEqual, ">=", 2, default! },
+    new object[] { TokenKind.Equal, "=", 5, default! },
+    new object[] { TokenKind.Equal, "==", 7, default! },
+    new object[] { TokenKind.LessThan, "<", 10, default! },
+    new object[] { TokenKind.LessThanOrEqual, "<=", 12, default! },
+    new object[] { TokenKind.Or, "|", 15, default! },
+    new object[] { TokenKind.Or, "/", 17, default! },
+    new object[] { TokenKind.Not, "!", 19, default! },
+    new object[] { TokenKind.Contains, ":", 21, default! },
+})]
+[TestFixture("123.456 0.4 .12 12.34.56", new object[]
+{
+    new object[] { TokenKind.Real, "123.456", 0, 123.456 },
+    new object[] { TokenKind.Real, "0.4", 8, 0.4 },
+    new object[] { TokenKind.Real, ".12", 12, 0.12 },
+    new object[] { TokenKind.PlainText, "12.34.56", 16, "12.34.56" },
+})]
 public class TokenizingTest
 {
     public Token[] ExpectedTokens;
