@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WilliamQiufeng.SearchParser", "WilliamQiufeng.SearchParser\WilliamQiufeng.SearchParser.csproj", "{77CF782A-D34E-4C4A-8043-E00DC06988B3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WilliamQiufeng.SearchParser.UnitTest", "WilliamQiufeng.SearchParser.UnitTest\WilliamQiufeng.SearchParser.UnitTest.csproj", "{804F8A07-9356-4EA6-9B43-2E6798EF2CF6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{77CF782A-D34E-4C4A-8043-E00DC06988B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77CF782A-D34E-4C4A-8043-E00DC06988B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77CF782A-D34E-4C4A-8043-E00DC06988B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77CF782A-D34E-4C4A-8043-E00DC06988B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{804F8A07-9356-4EA6-9B43-2E6798EF2CF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{804F8A07-9356-4EA6-9B43-2E6798EF2CF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{804F8A07-9356-4EA6-9B43-2E6798EF2CF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{804F8A07-9356-4EA6-9B43-2E6798EF2CF6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
