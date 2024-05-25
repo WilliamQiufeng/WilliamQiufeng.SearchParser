@@ -6,7 +6,6 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
     {
         private readonly List<string> _candidateKeys = new List<string>();
         private readonly Dictionary<char, Trie> _next = new Dictionary<char, Trie>();
-        public bool IsTerminal => _next.Count == 0;
 
         public IReadOnlyCollection<string> Candidates => _candidateKeys;
 
@@ -28,11 +27,6 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public bool TryNext(char keyChar, out Trie subTrie)
         {
             return _next.TryGetValue(keyChar, out subTrie);
-        }
-
-        public Trie Next(char keyChar)
-        {
-            return _next.GetValueOrDefault(keyChar);
         }
     }
 }

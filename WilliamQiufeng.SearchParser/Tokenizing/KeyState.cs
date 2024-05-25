@@ -18,17 +18,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             // We have reached the end: emit a token
             if (lookahead == '\0' || lookahead == ' ')
             {
-                if (_trie.Candidates.Count > 0)
-                {
-                    // emit the key of top candidate
-                    // override content with the full candidate content
-                    tokenizer.EmitToken(TokenKind.Key, _trie.Candidates.First());
-                }
-                else
-                {
-                    // No candidate found: convert into plain text
-                    tokenizer.EmitToken(TokenKind.PlainText);
-                }
+                // emit the key of top candidate
+                // override content with the full candidate content
+                tokenizer.EmitToken(TokenKind.Key, _trie.Candidates.First());
 
                 return EmptyState.State;
             }
