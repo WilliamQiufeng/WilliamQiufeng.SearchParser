@@ -19,7 +19,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             _currentState = EmptyState.State;
         }
 
-        public Trie KeywordTrie { get; set; } = new Trie();
+        public Trie KeywordTrie { get; } = new Trie();
 
         public IEnumerator<Token> GetEnumerator()
         {
