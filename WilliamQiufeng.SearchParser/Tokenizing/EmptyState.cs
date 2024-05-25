@@ -19,10 +19,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 return this;
             }
 
+            if (lookahead >= '0' && lookahead <= '9')
+                return new IntegerState();
+
+            if (lookahead == '"' || lookahead == '\'')
+                return new StringState();
+
             if (tokenizer.KeywordTrie.TryNext(lookahead, out _))
-            {
                 return new KeyState(tokenizer.KeywordTrie);
-            }
 
             return PlainTextState.State;
         }

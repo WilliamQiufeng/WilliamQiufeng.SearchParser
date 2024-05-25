@@ -20,14 +20,30 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.PlainText, "keya", 9, "keya" },
     new object[] { TokenKind.PlainText, "ka", 14, "ka" }
 })]
-[TestFixture(new[] { "aaa", "aba", "aab", "abc" }, "a ab aa aab abc aac", new object[]
+[TestFixture(new[] { "aaa", "aba", "aab", "bbc" }, "a ab aa aab bbc aac", new object[]
 {
     new object[] { TokenKind.Key, "a", 0, "aaa" },
     new object[] { TokenKind.Key, "ab", 2, "aba" },
     new object[] { TokenKind.Key, "aa", 5, "aaa" },
     new object[] { TokenKind.Key, "aab", 8, "aab" },
-    new object[] { TokenKind.Key, "abc", 12, "abc" },
+    new object[] { TokenKind.Key, "bbc", 12, "bbc" },
     new object[] { TokenKind.PlainText, "aac", 16, "aac" }
+})]
+[TestFixture(new[] { "a1", "ab" }, "a1 1a 123 0012", new object[]
+{
+    new object[] { TokenKind.Key, "a1", 0, "a1" },
+    new object[] { TokenKind.PlainText, "1a", 3, "1a" },
+    new object[] { TokenKind.Integer, "123", 6, 123 },
+    new object[] { TokenKind.Integer, "0012", 10, 12 },
+})]
+[TestFixture(new[] { "a1", "ab" }, "'a1\" 1a' 123", new object[]
+{
+    new object[] { TokenKind.String, "'a1\" 1a'", 0, "a1\" 1a" },
+    new object[] { TokenKind.Integer, "123", 9, 123 },
+})]
+[TestFixture("'aa", new object[]
+{
+    new object[] { TokenKind.PlainText, "'aa", 0, "'aa" },
 })]
 public class TokenizingTest
 {
@@ -39,7 +55,7 @@ public class TokenizingTest
     {
         Source = source;
         ExpectedTokens = expected.Cast<object[]>()
-            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], (string)e[3])).ToArray();
+            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], e[3])).ToArray();
         Tokenizer = new Tokenizer(Source);
     }
 
@@ -68,7 +84,7 @@ public class TokenizingTest
                 Assert.That(ExpectedTokens[i].Kind, Is.EqualTo(tokens[i].Kind));
                 Assert.That(ExpectedTokens[i].Segment.ToString(), Is.EqualTo(tokens[i].Segment.ToString()));
                 Assert.That(ExpectedTokens[i].Offset, Is.EqualTo(tokens[i].Offset));
-                Assert.That(ExpectedTokens[i].Content, Is.EqualTo(tokens[i].Content));
+                Assert.That(ExpectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
             });
         }
     }

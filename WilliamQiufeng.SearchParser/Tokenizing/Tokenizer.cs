@@ -21,6 +21,18 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         public Trie KeywordTrie { get; } = new Trie();
 
+        internal ReadOnlyMemory<char> BufferContent
+        {
+            get
+            {
+                var length = _currentTokenEndPos - _currentTokenStartPos + 1;
+                var segment = _currentTokenStartPos < _content.Length
+                    ? _content.AsMemory().Slice(_currentTokenStartPos, length)
+                    : new ReadOnlyMemory<char>();
+                return segment;
+            }
+        }
+
         public IEnumerator<Token> GetEnumerator()
         {
             Token nextToken;
@@ -50,16 +62,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             return consumed;
         }
 
-        internal Token GenerateToken(TokenKind kind, string? content = default)
+        internal Token GenerateToken(TokenKind kind, object? content = default)
         {
-            var length = _currentTokenEndPos - _currentTokenStartPos + 1;
-            var segment = _currentTokenStartPos < _content.Length
-                ? _content.AsMemory().Slice(_currentTokenStartPos, length)
-                : new ReadOnlyMemory<char>();
-            var token = new Token(kind,
-                segment,
-                _currentTokenStartPos,
-                content);
+            var token = new Token(kind, BufferContent, _currentTokenStartPos, content);
             DiscardBuffer();
             return token;
         }
@@ -70,7 +75,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             _currentTokenEndPos = _currentTokenStartPos;
         }
 
-        internal void EmitToken(TokenKind kind, string? content = default)
+        internal void EmitToken(TokenKind kind, object? content = default)
         {
             EmitToken(GenerateToken(kind, content));
         }

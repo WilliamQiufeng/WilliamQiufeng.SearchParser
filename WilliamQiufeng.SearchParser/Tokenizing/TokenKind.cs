@@ -7,14 +7,17 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         PlainText,
         Key,
         String,
-        Number,
+        Integer,
+        Real,
         TimeSpan,
+        Percentage,
         Equal,
         NotEqual,
         LessThan,
         MoreThan,
         LessThanOrEqual,
         MoreThanOrEqual,
+        Contains,
         Not
     }
 }

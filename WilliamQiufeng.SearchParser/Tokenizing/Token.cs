@@ -5,17 +5,17 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
     public struct Token
     {
         public readonly TokenKind Kind;
-        public readonly string Content;
+        public readonly object? Value;
         public readonly ReadOnlyMemory<char> Segment;
         public readonly int Offset;
 
-        public Token(TokenKind kind, ReadOnlyMemory<char> segment = default, int offset = 0, string? content = default)
+        public Token(TokenKind kind, ReadOnlyMemory<char> segment = default, int offset = 0, object? content = default)
         {
             Kind = kind;
             Segment = segment;
             Offset = offset;
             MarkedAsPlain = Kind == TokenKind.PlainText;
-            Content = content ?? segment.ToString();
+            Value = content;
         }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         public override string ToString()
         {
-            return $"[{Kind} {Segment.ToString()} #{Offset}]";
+            return $"[{Kind} {Segment.ToString()} ({Value}) #{Offset}]";
         }
     }
 }

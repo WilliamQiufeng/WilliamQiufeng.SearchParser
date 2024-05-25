@@ -1,21 +1,24 @@
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
-    public class PlainTextState : ITokenizerState
+    public class IntegerState : ITokenizerState
     {
-        public static readonly PlainTextState State = new PlainTextState();
+        private int _currentInteger;
 
         public ITokenizerState Process(Tokenizer tokenizer)
         {
             var lookahead = tokenizer.Lookahead();
 
-            // We have reached a word boundary: emit a token
             if (lookahead == '\0' || lookahead == ' ')
             {
-                tokenizer.EmitToken(TokenKind.PlainText, tokenizer.BufferContent.ToString());
+                tokenizer.EmitToken(TokenKind.Integer, _currentInteger);
                 return EmptyState.State;
             }
 
+            if (lookahead < '0' || lookahead > '9')
+                return PlainTextState.State;
+
             tokenizer.Consume();
+            _currentInteger = _currentInteger * 10 + lookahead - '0';
             return this;
         }
     }
