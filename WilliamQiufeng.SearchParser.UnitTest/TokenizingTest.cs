@@ -12,14 +12,25 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.PlainText, "multichar", 0, "multichar" },
     new object[] { TokenKind.PlainText, "words", 10, "words" }
 })]
+[TestFixture(new[] { "key" }, "k ke key keya ka", new object[]
+{
+    new object[] { TokenKind.Key, "k", 0, "key" },
+    new object[] { TokenKind.Key, "ke", 2, "key" },
+    new object[] { TokenKind.Key, "key", 5, "key" },
+    new object[] { TokenKind.PlainText, "keya", 9, "keya" },
+    new object[] { TokenKind.PlainText, "ka", 14, "ka" }
+})]
+[TestFixture(new[] { "aaa", "aba", "aab", "abc" }, "a ab aa aab abc aac", new object[]
+{
+    new object[] { TokenKind.Key, "a", 0, "aaa" },
+    new object[] { TokenKind.Key, "ab", 2, "aba" },
+    new object[] { TokenKind.Key, "aa", 5, "aaa" },
+    new object[] { TokenKind.Key, "aab", 8, "aab" },
+    new object[] { TokenKind.Key, "abc", 12, "abc" },
+    new object[] { TokenKind.PlainText, "aac", 16, "aac" }
+})]
 public class TokenizingTest
 {
-    [SetUp]
-    public void SetUp()
-    {
-        Tokenizer = new Tokenizer(Source);
-    }
-
     public Token[] ExpectedTokens;
     public string Source;
     public Tokenizer Tokenizer;
@@ -29,6 +40,15 @@ public class TokenizingTest
         Source = source;
         ExpectedTokens = expected.Cast<object[]>()
             .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], (string)e[3])).ToArray();
+        Tokenizer = new Tokenizer(Source);
+    }
+
+    public TokenizingTest(string[] keys, string source, object[] expected) : this(source, expected)
+    {
+        foreach (var key in keys)
+        {
+            Tokenizer.KeywordTrie.Add(key);
+        }
     }
 
     [Test]
