@@ -15,8 +15,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         {
             var lookahead = tokenizer.Lookahead();
 
-            // We have reached the end: emit a token
-            if (lookahead == '\0' || lookahead == ' ')
+            // We have reached the end, or a relational operator is reached: emit the key token
+            if (lookahead == '\0' || lookahead == ' ' || lookahead == '=' || lookahead == '>' || lookahead == '<' ||
+                lookahead == '!' || lookahead == ':' || lookahead == '/' || lookahead == '|')
             {
                 // emit the key of top candidate
                 // override content with the full candidate content

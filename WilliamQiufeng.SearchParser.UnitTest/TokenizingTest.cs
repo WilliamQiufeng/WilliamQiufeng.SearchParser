@@ -60,6 +60,15 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.Contains, ":", 21, default! },
     new object[] { TokenKind.NotEqual, "!=", 23, default! },
 })]
+[TestFixture(new[] { "a", "b" }, "a>3 a < 5%", new object[]
+{
+    new object[] { TokenKind.Key, "a", 0, "a" },
+    new object[] { TokenKind.MoreThan, ">", 1, default! },
+    new object[] { TokenKind.Integer, "3", 2, 3 },
+    new object[] { TokenKind.Key, "a", 4, "a" },
+    new object[] { TokenKind.LessThan, "<", 6, default! },
+    new object[] { TokenKind.Percentage, "5%", 8, 5 },
+})]
 [TestFixture("123.456 0.4 .12 12.34.56 1.3s", new object[]
 {
     new object[] { TokenKind.Real, "123.456", 0, 123.456 },
