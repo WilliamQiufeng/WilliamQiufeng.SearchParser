@@ -29,12 +29,13 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.Key, "bbc", 12, "bbc" },
     new object[] { TokenKind.PlainText, "aac", 16, "aac" }
 })]
-[TestFixture(new[] { "a1", "ab" }, "a1 1a 123 0012", new object[]
+[TestFixture(new[] { "a1", "ab" }, "a1 1a 123 0012 8%", new object[]
 {
     new object[] { TokenKind.Key, "a1", 0, "a1" },
     new object[] { TokenKind.PlainText, "1a", 3, "1a" },
     new object[] { TokenKind.Integer, "123", 6, 123 },
     new object[] { TokenKind.Integer, "0012", 10, 12 },
+    new object[] { TokenKind.Percentage, "8%", 15, 8 },
 })]
 [TestFixture(new[] { "a1", "ab" }, "'a1\" 1a' 123", new object[]
 {
@@ -45,7 +46,7 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
 {
     new object[] { TokenKind.PlainText, "'aa", 0, "'aa" },
 })]
-[TestFixture("> >= = == < <= | / ! :", new object[]
+[TestFixture("> >= = == < <= | / ! : !=", new object[]
 {
     new object[] { TokenKind.MoreThan, ">", 0, default! },
     new object[] { TokenKind.MoreThanOrEqual, ">=", 2, default! },
@@ -57,20 +58,24 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.Or, "/", 17, default! },
     new object[] { TokenKind.Not, "!", 19, default! },
     new object[] { TokenKind.Contains, ":", 21, default! },
+    new object[] { TokenKind.NotEqual, "!=", 23, default! },
 })]
-[TestFixture("123.456 0.4 .12 12.34.56", new object[]
+[TestFixture("123.456 0.4 .12 12.34.56 1.3s", new object[]
 {
     new object[] { TokenKind.Real, "123.456", 0, 123.456 },
     new object[] { TokenKind.Real, "0.4", 8, 0.4 },
     new object[] { TokenKind.Real, ".12", 12, 0.12 },
     new object[] { TokenKind.PlainText, "12.34.56", 16, "12.34.56" },
+    new object[] { TokenKind.PlainText, "1.3s", 25, "1.3s" },
 })]
-[TestFixture("12m36s 1hr 6s7s 3hours4minutes12seconds", new object[]
+[TestFixture("12m36s 1hr 6s7s 1h2t 3h4 3hours4minutes12seconds", new object[]
 {
     new object[] { TokenKind.TimeSpan, "12m36s", 0 },
     new object[] { TokenKind.TimeSpan, "1hr", 7 },
     new object[] { TokenKind.PlainText, "6s7s", 11 },
-    new object[] { TokenKind.TimeSpan, "3hours4minutes12seconds", 16 },
+    new object[] { TokenKind.PlainText, "1h2t", 16 },
+    new object[] { TokenKind.PlainText, "3h4", 21 },
+    new object[] { TokenKind.TimeSpan, "3hours4minutes12seconds", 25 },
 })]
 public class TokenizingTest
 {
