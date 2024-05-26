@@ -4,9 +4,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class KeyState : ITokenizerState
     {
-        private Trie _trie;
+        private Trie<object> _trie;
 
-        public KeyState(Trie trie)
+        public KeyState(Trie<object> trie)
         {
             _trie = trie;
         }

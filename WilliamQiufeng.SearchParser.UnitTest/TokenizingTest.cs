@@ -65,17 +65,27 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.Real, ".12", 12, 0.12 },
     new object[] { TokenKind.PlainText, "12.34.56", 16, "12.34.56" },
 })]
+[TestFixture("12m36s 1hr 6s7s 3hours4minutes12seconds", new object[]
+{
+    new object[] { TokenKind.TimeSpan, "12m36s", 0 },
+    new object[] { TokenKind.TimeSpan, "1hr", 7 },
+    new object[] { TokenKind.PlainText, "6s7s", 11 },
+    new object[] { TokenKind.TimeSpan, "3hours4minutes12seconds", 16 },
+})]
 public class TokenizingTest
 {
     public Token[] ExpectedTokens;
     public string Source;
     public Tokenizer Tokenizer;
+    public bool CheckValue = true;
 
     public TokenizingTest(string source, object[] expected)
     {
         Source = source;
+        CheckValue = expected.Cast<object[]>().All(o => o.Length >= 4);
         ExpectedTokens = expected.Cast<object[]>()
-            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], e[3])).ToArray();
+            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], CheckValue ? e[3] : null))
+            .ToArray();
         Tokenizer = new Tokenizer(Source);
     }
 
@@ -83,7 +93,7 @@ public class TokenizingTest
     {
         foreach (var key in keys)
         {
-            Tokenizer.KeywordTrie.Add(key);
+            Tokenizer.KeywordTrie.Add(key, key);
         }
     }
 
@@ -104,7 +114,8 @@ public class TokenizingTest
                 Assert.That(ExpectedTokens[i].Kind, Is.EqualTo(tokens[i].Kind));
                 Assert.That(ExpectedTokens[i].Segment.ToString(), Is.EqualTo(tokens[i].Segment.ToString()));
                 Assert.That(ExpectedTokens[i].Offset, Is.EqualTo(tokens[i].Offset));
-                Assert.That(ExpectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
+                if (CheckValue)
+                    Assert.That(ExpectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
             });
         }
     }

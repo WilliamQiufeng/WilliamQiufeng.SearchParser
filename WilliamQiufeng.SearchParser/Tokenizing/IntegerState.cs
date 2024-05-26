@@ -8,23 +8,24 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         {
             var lookahead = tokenizer.Lookahead();
 
-            if (lookahead == '\0' || lookahead == ' ')
+            switch (lookahead)
             {
-                tokenizer.EmitToken(TokenKind.Integer, _currentInteger);
-                return EmptyState.State;
+                case '\0':
+                case ' ':
+                    tokenizer.EmitToken(TokenKind.Integer, _currentInteger);
+                    return EmptyState.State;
+                case '%':
+                    tokenizer.Consume();
+                    tokenizer.EmitToken(TokenKind.Percentage, _currentInteger);
+                    return EmptyState.State;
+                case '.':
+                    tokenizer.Consume();
+                    return new RealState();
             }
 
-            if (lookahead == '%')
+            if (TimeSpanState.Trie.TryNext(lookahead, out _))
             {
-                tokenizer.Consume();
-                tokenizer.EmitToken(TokenKind.Percentage, _currentInteger);
-                return EmptyState.State;
-            }
-
-            if (lookahead == '.')
-            {
-                tokenizer.Consume();
-                return new RealState();
+                return new TimeSpanState(_currentInteger);
             }
 
             if (lookahead < '0' || lookahead > '9')

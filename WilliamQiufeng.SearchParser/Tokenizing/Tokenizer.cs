@@ -19,7 +19,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             _currentState = EmptyState.State;
         }
 
-        public Trie KeywordTrie { get; } = new Trie();
+        public Trie<object> KeywordTrie { get; } = new Trie<object>();
 
         internal ReadOnlyMemory<char> BufferContent
         {
