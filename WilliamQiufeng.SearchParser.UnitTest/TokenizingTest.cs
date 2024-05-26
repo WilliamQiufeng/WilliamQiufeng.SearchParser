@@ -68,7 +68,7 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.PlainText, "12.34.56", 16, "12.34.56" },
     new object[] { TokenKind.PlainText, "1.3s", 25, "1.3s" },
 })]
-[TestFixture("12m36s 1hr 6s7s 1h2t 3h4 3hours4minutes12seconds", new object[]
+[TestFixture("12m36s 1hr 6s7s 1h2t 3h4 3hours4minutes12seconds 3:45 5: 1:2:3:4 1:34s 1::1 1ms", new object[]
 {
     new object[] { TokenKind.TimeSpan, "12m36s", 0 },
     new object[] { TokenKind.TimeSpan, "1hr", 7 },
@@ -76,6 +76,12 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.PlainText, "1h2t", 16 },
     new object[] { TokenKind.PlainText, "3h4", 21 },
     new object[] { TokenKind.TimeSpan, "3hours4minutes12seconds", 25 },
+    new object[] { TokenKind.TimeSpan, "3:45", 49 },
+    new object[] { TokenKind.PlainText, "5:", 54 },
+    new object[] { TokenKind.PlainText, "1:2:3:4", 57 },
+    new object[] { TokenKind.PlainText, "1:34s", 65 },
+    new object[] { TokenKind.PlainText, "1::1", 71 },
+    new object[] { TokenKind.PlainText, "1ms", 76 },
 })]
 public class TokenizingTest
 {

@@ -23,7 +23,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     return new RealState();
             }
 
-            if (TimeSpanState.Trie.TryNext(lookahead, out _))
+            if (TimeSpanState.Trie.TryNext(lookahead, out _) || lookahead == ':')
             {
                 return new TimeSpanState(_currentInteger);
             }

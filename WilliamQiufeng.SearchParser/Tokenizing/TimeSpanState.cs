@@ -17,6 +17,8 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         private int _currentInteger;
 
         private Trie<TimeSpanKind>? _currentTrie;
+        private FormatKind _formatKind = FormatKind.Unknown;
+        private bool _hasAnyDigitRead = true;
         private int _hours = -1;
         private int _minutes = -1;
         private int _seconds = -1;
@@ -29,10 +31,13 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public ITokenizerState Process(Tokenizer tokenizer)
         {
             var lookahead = tokenizer.Lookahead();
+            var isDigit = lookahead >= '0' && lookahead <= '9';
 
             // We have reached the end: emit a token
             if (lookahead == '\0' || lookahead == ' ')
             {
+                // Finish up: record the last component
+                // '5:' (no digits for last component) and '1m25' (no unit) fails here
                 if (!SetField())
                     return PlainTextState.State;
 
@@ -44,33 +49,62 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 return EmptyState.State;
             }
 
-            if (_currentTrie != null)
-            {
-                if (_currentTrie.TryNext(lookahead, out var subTrie))
-                {
-                    tokenizer.Consume();
-                    _currentTrie = subTrie;
-                    return this;
-                }
-
-                SetField();
-            }
-            else if (Trie.TryNext(lookahead, out var subTrie))
+            // Next character is a unit
+            var trieNextMatch = (_currentTrie ?? Trie).TryNext(lookahead, out var subTrie);
+            if ((_formatKind == FormatKind.Unknown || _formatKind == FormatKind.Unit) && trieNextMatch)
             {
                 tokenizer.Consume();
                 _currentTrie = subTrie;
+                _formatKind = FormatKind.Unit;
                 return this;
             }
 
-            if (lookahead < '0' || lookahead > '9')
-                return PlainTextState.State;
+            // We are just done reading a unit (next character isn't in trie's key)
+            if (_formatKind == FormatKind.Unit && _currentTrie != null)
+                SetFieldUnit();
 
-            _currentInteger = _currentInteger * 10 + lookahead - '0';
-            tokenizer.Consume();
-            return this;
+            // Next character is a colon ':'
+            if ((_formatKind == FormatKind.Unknown || _formatKind == FormatKind.Colon) && lookahead == ':')
+            {
+                tokenizer.Consume();
+                _formatKind = FormatKind.Colon;
+                // We got a duplicate colon, or SetFieldColon fails
+                // '1::1' and '1:1:1:1' fails here
+                if (!_hasAnyDigitRead || !SetFieldColon())
+                    return PlainTextState.State;
+                return this;
+            }
+
+            if (isDigit)
+            {
+                tokenizer.Consume();
+                _currentInteger = _currentInteger * 10 + lookahead - '0';
+                _hasAnyDigitRead = true;
+                return this;
+            }
+
+            // '1ms' fails here
+            return PlainTextState.State;
         }
 
         private bool SetField()
+        {
+            if (!_hasAnyDigitRead)
+                return false;
+
+            switch (_formatKind)
+            {
+                case FormatKind.Colon:
+                    return SetFieldColon();
+                case FormatKind.Unit:
+                    return SetFieldUnit();
+                case FormatKind.Unknown:
+                default:
+                    return false;
+            }
+        }
+
+        private bool SetFieldUnit()
         {
             if (_currentTrie == null)
                 return false;
@@ -93,7 +127,27 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
             _currentInteger = 0;
             _currentTrie = null;
+            _hasAnyDigitRead = false;
             return true;
+        }
+
+        private bool SetFieldColon()
+        {
+            if (_hours != -1)
+                return false;
+            _hours = _minutes;
+            _minutes = _seconds;
+            _seconds = _currentInteger;
+            _currentInteger = 0;
+            _hasAnyDigitRead = false;
+            return true;
+        }
+
+        private enum FormatKind
+        {
+            Unknown,
+            Colon,
+            Unit
         }
     }
 }
