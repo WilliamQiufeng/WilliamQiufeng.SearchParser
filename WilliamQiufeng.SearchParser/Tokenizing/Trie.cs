@@ -4,14 +4,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Trie
     {
-        private readonly List<string> _candidateKeys = new List<string>();
+        private readonly List<object> _candidateKeys = new List<object>();
         private readonly Dictionary<char, Trie> _next = new Dictionary<char, Trie>();
 
-        public IReadOnlyCollection<string> Candidates => _candidateKeys;
+        public IReadOnlyCollection<object> Candidates => _candidateKeys;
 
-        public void Add(string fullKey, int index = 0)
+        public void Add(string fullKey, object? value = default, int index = 0)
         {
-            _candidateKeys.Add(fullKey);
+            _candidateKeys.Add(value ?? fullKey);
             if (index == fullKey.Length)
                 return;
             var keyChar = fullKey[index];
@@ -21,7 +21,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 _next[keyChar] = subTrie;
             }
 
-            subTrie.Add(fullKey, index + 1);
+            subTrie.Add(fullKey, value, index + 1);
         }
 
         public bool TryNext(char keyChar, out Trie subTrie)
