@@ -8,14 +8,16 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public readonly object? Value;
         public readonly ReadOnlyMemory<char> Segment;
         public readonly int Offset;
+        public bool IncludedInCriterion;
 
         public Token(TokenKind kind, ReadOnlyMemory<char> segment = default, int offset = 0, object? content = default)
         {
             Kind = kind;
             Segment = segment;
             Offset = offset;
-            MarkedAsPlain = Kind == TokenKind.PlainText;
+            MarkedAsPlain = false;
             Value = content;
+            IncludedInCriterion = false;
         }
 
         /// <summary>

@@ -107,5 +107,28 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
             return GenerateToken(TokenKind.End);
         }
+
+        public static IEnumerable<Token> TokenizeAsPlainTextTokens(ReadOnlyMemory<char> view, int offset = 0)
+        {
+            var sliceStart = 0;
+            var sliceEnd = -1;
+
+            while (sliceEnd < view.Length)
+            {
+                if (sliceEnd == view.Length - 1 || view.Span[sliceEnd + 1] == ' ')
+                {
+                    var length = sliceEnd - sliceStart + 1;
+                    if (length > 0)
+                    {
+                        var segment = view.Slice(sliceStart, length);
+                        yield return new Token(TokenKind.PlainText, segment, sliceStart + offset, segment.ToString());
+                    }
+
+                    sliceStart = sliceEnd + 2;
+                }
+
+                sliceEnd++;
+            }
+        }
     }
 }
