@@ -6,7 +6,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class TimeSpanState : ITokenizerState
     {
-        public static readonly Trie<TimeSpanKind> Trie = new Trie<TimeSpanKind>(new Dictionary<string, TimeSpanKind>
+        public static readonly Trie<TimeSpanKind> Trie = new(new Dictionary<string, TimeSpanKind>
         {
             ["hours"] = TimeSpanKind.Hour,
             ["hrs"] = TimeSpanKind.Hour,
@@ -31,7 +31,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public ITokenizerState Process(Tokenizer tokenizer)
         {
             var lookahead = tokenizer.Lookahead();
-            var isDigit = lookahead >= '0' && lookahead <= '9';
+            var isDigit = lookahead is >= '0' and <= '9';
 
             // We have reached the end: emit a token
             if (lookahead is '\0' or ' ')
@@ -53,7 +53,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             var trieNextMatch = (_currentTrie ?? Trie).TryNext(lookahead, out var subTrie);
             if (_formatKind is FormatKind.Unknown or FormatKind.Unit && trieNextMatch)
             {
-                tokenizer.Consume();
+                tokenizer.Advance();
                 _currentTrie = subTrie;
                 _formatKind = FormatKind.Unit;
                 return this;
@@ -66,7 +66,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             // Next character is a colon ':'
             if (_formatKind is FormatKind.Unknown or FormatKind.Colon && lookahead == ':')
             {
-                tokenizer.Consume();
+                tokenizer.Advance();
                 _formatKind = FormatKind.Colon;
                 // We got a duplicate colon, or SetFieldColon fails
                 // '1::1' and '1:1:1:1' fails here
@@ -77,7 +77,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
             if (isDigit)
             {
-                tokenizer.Consume();
+                tokenizer.Advance();
                 _currentInteger = _currentInteger * 10 + lookahead - '0';
                 _hasAnyDigitRead = true;
                 return this;

@@ -2,7 +2,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class PlainTextState : ITokenizerState
     {
-        public static readonly PlainTextState State = new PlainTextState();
+        public static readonly PlainTextState State = new();
 
         public ITokenizerState Process(Tokenizer tokenizer)
         {
@@ -15,7 +15,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 return EmptyState.State;
             }
 
-            tokenizer.Consume();
+            tokenizer.Advance();
             return this;
         }
     }

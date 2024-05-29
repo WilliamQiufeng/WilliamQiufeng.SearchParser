@@ -16,7 +16,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             if (lookahead != '.' && lookahead is < '0' or > '9')
                 return PlainTextState.State;
 
-            tokenizer.Consume();
+            tokenizer.Advance();
             return this;
         }
 

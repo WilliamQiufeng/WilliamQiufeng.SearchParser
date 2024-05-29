@@ -6,6 +6,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         End,
         PlainText,
         Key,
+        Enum,
         String,
         Integer,
         Real,

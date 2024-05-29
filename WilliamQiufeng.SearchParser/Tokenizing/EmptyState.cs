@@ -2,7 +2,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class EmptyState : ITokenizerState
     {
-        public static readonly EmptyState State = new EmptyState();
+        public static readonly EmptyState State = new();
 
         public ITokenizerState Process(Tokenizer tokenizer)
         {
@@ -15,23 +15,23 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     return EndState.State;
                 // Discard all whitespaces
                 case ' ':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     tokenizer.DiscardBuffer();
                     return this;
                 case '=':
                 {
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     if (tokenizer.Lookahead() == '=')
-                        tokenizer.Consume();
+                        tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Equal);
                     return this;
                 }
                 case '>':
                 {
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     if (tokenizer.Lookahead() == '=')
                     {
-                        tokenizer.Consume();
+                        tokenizer.Advance();
                         tokenizer.EmitToken(TokenKind.MoreThanOrEqual);
                     }
                     else
@@ -43,10 +43,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 }
                 case '<':
                 {
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     if (tokenizer.Lookahead() == '=')
                     {
-                        tokenizer.Consume();
+                        tokenizer.Advance();
                         tokenizer.EmitToken(TokenKind.LessThanOrEqual);
                     }
                     else
@@ -58,10 +58,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 }
                 case '!':
                 {
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     if (tokenizer.Lookahead() == '=')
                     {
-                        tokenizer.Consume();
+                        tokenizer.Advance();
                         tokenizer.EmitToken(TokenKind.NotEqual);
                     }
                     else
@@ -73,15 +73,15 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 }
                 case '/':
                 case '|':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Or);
                     return this;
                 case ':':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Contains);
                     return this;
                 case '.':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     return new RealState();
                 case >= '0' and <= '9':
                     return new IntegerState();
@@ -89,10 +89,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     return new StringState();
             }
 
-            if (tokenizer.KeywordTrie.TryNext(lookahead, out _))
-                return new KeyState(tokenizer.KeywordTrie);
-
-            return PlainTextState.State;
+            return tokenizer.KeyEnumResolveMode switch
+            {
+                KeyEnumResolveMode.Key or KeyEnumResolveMode.Both when tokenizer.KeywordTrie.TryNext(lookahead, out _)
+                    => new KeyState(tokenizer.KeywordTrie),
+                KeyEnumResolveMode.Enum or KeyEnumResolveMode.Both when tokenizer.EnumTrie.TryNext(lookahead, out _)
+                    => new EnumState(tokenizer.EnumTrie),
+                _ => PlainTextState.State
+            };
         }
     }
 }

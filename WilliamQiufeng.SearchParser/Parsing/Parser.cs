@@ -8,12 +8,12 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public class Parser
     {
-        private readonly Stack<int> _ruleStartIndex = new Stack<int>();
-        private readonly List<SearchCriterion> _searchCriteria = new List<SearchCriterion>();
+        private readonly Stack<int> _ruleStartIndex = new();
+        private readonly List<SearchCriterion> _searchCriteria = new();
         private readonly Tokenizer _tokenizer;
-        private readonly List<Token> _tokens = new List<Token>();
+        private readonly List<Token> _tokens = new();
         private int _lookaheadPos;
-        private Token? _lookaheadToken = null;
+        private Token? _lookaheadToken;
         private int _ruleEndPos = -1;
 
         public Parser(Tokenizer tokenizer)
@@ -175,9 +175,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return true;
         }
 
-        private bool Rewind(out TokenRange TokenRange)
+        private bool Rewind(out TokenRange tokenRange)
         {
-            TokenRange = PopIndex();
+            tokenRange = PopIndex();
             return false;
         }
 

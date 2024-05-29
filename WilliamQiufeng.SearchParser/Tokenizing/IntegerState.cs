@@ -15,11 +15,11 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     tokenizer.EmitToken(TokenKind.Integer, _currentInteger);
                     return EmptyState.State;
                 case '%':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Percentage, _currentInteger);
                     return EmptyState.State;
                 case '.':
-                    tokenizer.Consume();
+                    tokenizer.Advance();
                     return new RealState();
             }
 
@@ -31,7 +31,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             if (lookahead is < '0' or > '9')
                 return PlainTextState.State;
 
-            tokenizer.Consume();
+            tokenizer.Advance();
             _currentInteger = _currentInteger * 10 + lookahead - '0';
             return this;
         }

@@ -6,12 +6,13 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Tokenizer : IEnumerable<Token>
     {
-        private readonly Queue<Token> _emittingTokens = new Queue<Token>();
+        private readonly Queue<Token> _emittingTokens = new();
         internal readonly string Content;
         private ITokenizerState _currentState;
         private int _currentTokenEndPos = -1;
         private int _currentTokenStartPos;
         private int _lookaheadPos;
+        internal KeyEnumResolveMode KeyEnumResolveMode = KeyEnumResolveMode.Both;
 
         public Tokenizer(string content)
         {
@@ -19,7 +20,8 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             _currentState = EmptyState.State;
         }
 
-        public Trie<object> KeywordTrie { get; } = new Trie<object>();
+        public Trie<object> KeywordTrie { get; } = new();
+        public Trie<object> EnumTrie { get; } = new();
 
         internal ReadOnlyMemory<char> BufferContent
         {
@@ -53,13 +55,11 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             return _lookaheadPos < Content.Length ? Content[_lookaheadPos] : '\0';
         }
 
-        internal char Consume()
+        internal void Advance()
         {
-            var consumed = Lookahead();
             _currentTokenEndPos = _lookaheadPos;
             if (_lookaheadPos < Content.Length)
                 _lookaheadPos++;
-            return consumed;
         }
 
         internal Token GenerateToken(TokenKind kind, object? content = default)

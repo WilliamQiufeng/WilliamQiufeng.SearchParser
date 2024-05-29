@@ -1,11 +1,12 @@
+using System;
 using System.Collections.Generic;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Trie<TCandidate>
     {
-        private readonly List<TCandidate> _candidateKeys = new List<TCandidate>();
-        private readonly Dictionary<char, Trie<TCandidate>> _next = new Dictionary<char, Trie<TCandidate>>();
+        private readonly List<TCandidate> _candidateKeys = new();
+        private readonly Dictionary<char, Trie<TCandidate>> _next = new();
 
         public Trie()
         {
@@ -39,6 +40,16 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public bool TryNext(char keyChar, out Trie<TCandidate> subTrie)
         {
             return _next.TryGetValue(keyChar, out subTrie);
+        }
+
+        public bool TryNext(ReadOnlySpan<char> segment, out Trie<TCandidate> subTrie)
+        {
+            subTrie = this;
+            foreach (var c in segment)
+                if (!subTrie.TryNext(c, out subTrie))
+                    return false;
+
+            return true;
         }
     }
 }

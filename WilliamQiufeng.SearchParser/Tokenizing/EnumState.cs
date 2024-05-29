@@ -2,11 +2,11 @@ using System.Linq;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
-    public class KeyState : ITokenizerState
+    public class EnumState : ITokenizerState
     {
         private Trie<object> _trie;
 
-        public KeyState(Trie<object> trie)
+        public EnumState(Trie<object> trie)
         {
             _trie = trie;
         }
@@ -16,11 +16,11 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             var lookahead = tokenizer.Lookahead();
 
             // We have reached the end, or a relational operator is reached: emit the key token
-            if (lookahead.IsKeyEnd())
+            if (lookahead.IsEnumEnd())
             {
-                // emit the key of top candidate
+                // emit the enum of top candidate
                 // override content with the full candidate content
-                tokenizer.EmitToken(TokenKind.Key, _trie.Candidates.First());
+                tokenizer.EmitToken(TokenKind.Enum, _trie.Candidates.First());
 
                 return EmptyState.State;
             }
@@ -30,10 +30,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             {
                 // When we allow both key and enum to be tokenized, we do fallback on each other
                 if (tokenizer.KeyEnumResolveMode is KeyEnumResolveMode.Both
-                    && tokenizer.EnumTrie.TryNext(tokenizer.BufferContent.Span, out var subTrie))
+                    && tokenizer.KeywordTrie.TryNext(tokenizer.BufferContent.Span, out var subTrie))
                 {
                     tokenizer.Advance();
-                    return new EnumState(subTrie);
+                    return new KeyState(subTrie);
                 }
 
                 return PlainTextState.State;
