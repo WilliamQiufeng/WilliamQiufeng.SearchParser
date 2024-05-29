@@ -217,18 +217,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
             Token? plainTextConversionStartToken = null;
             foreach (var token in _tokens)
             {
-                if (token.MarkedAsPlain)
-                {
-                    plainTextConversionStartToken ??= token;
-                }
-                else
+                if (token.IncludedInCriterion || token.Kind == TokenKind.End)
                 {
                     if (plainTextConversionStartToken == null)
-                    {
-                        if (token.Kind == TokenKind.PlainText && !token.IncludedInCriterion)
-                            yield return token;
                         continue;
-                    }
 
                     var start = plainTextConversionStartToken.Offset;
                     var end = token.Offset - 1;
@@ -238,10 +230,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
                         yield return plainTextToken;
                     }
 
-                    if (token.Kind == TokenKind.PlainText)
-                        yield return token;
-
                     plainTextConversionStartToken = null;
+                }
+                else
+                {
+                    plainTextConversionStartToken ??= token;
                 }
             }
         }

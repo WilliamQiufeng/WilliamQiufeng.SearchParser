@@ -19,15 +19,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             Kind = kind;
             Segment = segment;
             Offset = offset;
-            MarkedAsPlain = false;
             Value = content;
             IncludedInCriterion = false;
         }
-
-        /// <summary>
-        ///     It is marked to be converted to a plain text token in parser stage
-        /// </summary>
-        public bool MarkedAsPlain { get; internal set; }
 
         public override string ToString()
         {
