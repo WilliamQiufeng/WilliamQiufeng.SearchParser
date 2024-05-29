@@ -10,21 +10,24 @@ namespace WilliamQiufeng.SearchParser.Parsing
     {
         private readonly Stack<int> _ruleStartIndex = new Stack<int>();
         private readonly List<SearchCriterion> _searchCriteria = new List<SearchCriterion>();
-        private readonly Token[] _tokens;
+        private readonly Tokenizer _tokenizer;
+        private readonly List<Token> _tokens = new List<Token>();
         private int _lookaheadPos;
+        private Token? _lookaheadToken = null;
         private int _ruleEndPos = -1;
 
-        public Parser(Token[] tokens)
+        public Parser(Tokenizer tokenizer)
         {
-            _tokens = tokens;
+            _tokenizer = tokenizer;
         }
+
 
         public SearchCriterionConstraint SearchCriterionConstraint { get; set; } = _ => true;
         public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria;
 
         internal Token Lookahead()
         {
-            return _lookaheadPos < _tokens.Length ? _tokens[_lookaheadPos] : new Token();
+            return _lookaheadToken ??= _tokenizer.NextToken();
         }
 
         internal Token Consume()
@@ -37,7 +40,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
         private void Advance()
         {
             _ruleEndPos = _lookaheadPos;
-            if (_lookaheadPos < _tokens.Length)
+            _tokens.Add(_lookaheadToken ?? Lookahead());
+            _lookaheadToken = null;
+            if (_lookaheadPos < _tokens.Count)
                 _lookaheadPos++;
         }
 
@@ -56,11 +61,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
             _ruleStartIndex.Push(_lookaheadPos);
         }
 
-        internal ArraySegment<Token> PopIndex()
+        internal TokenRange PopIndex()
         {
             var startIndex = _ruleStartIndex.Pop();
             var endIndex = _ruleEndPos;
-            return new ArraySegment<Token>(_tokens, startIndex, endIndex - startIndex + 1);
+            return new TokenRange(startIndex, endIndex);
         }
 
         internal bool ParseValue(out Token? token)
@@ -98,7 +103,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
         }
 
-        internal bool ParseSearchCriterion(out ArraySegment<Token> range)
+        internal bool ParseSearchCriterion(out TokenRange range)
         {
             PushIndex();
             var invert = Match(TokenKind.Not, out _);
@@ -170,9 +175,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return true;
         }
 
-        private bool Rewind(out ArraySegment<Token> range)
+        private bool Rewind(out TokenRange TokenRange)
         {
-            range = PopIndex();
+            TokenRange = PopIndex();
             return false;
         }
 
@@ -189,10 +194,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     case TokenKind.Key:
                     {
                         var success = ParseSearchCriterion(out var range);
-                        for (var index = 0; index < range.Count; index++)
+                        foreach (var index in range)
                         {
-                            _tokens[index + range.Offset].MarkedAsPlain = !success;
-                            _tokens[index + range.Offset].IncludedInCriterion = success;
+                            _tokens[index].MarkedAsPlain = !success;
+                            _tokens[index].IncludedInCriterion = success;
                         }
 
                         break;
@@ -203,9 +208,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
                         break;
                 }
             }
+
+            Advance();
         }
 
-        public IEnumerable<Token> GetPlainTextTerms(string source)
+        public IEnumerable<Token> GetPlainTextTerms()
         {
             Token? plainTextConversionStartToken = null;
             foreach (var token in _tokens)
@@ -223,9 +230,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
                         continue;
                     }
 
-                    var start = plainTextConversionStartToken.Value.Offset;
+                    var start = plainTextConversionStartToken.Offset;
                     var end = token.Offset - 1;
-                    var segment = source.AsMemory().Slice(start, end - start + 1);
+                    var segment = _tokenizer.Content.AsMemory().Slice(start, end - start + 1);
                     foreach (var plainTextToken in Tokenizer.TokenizeAsPlainTextTokens(segment, token.Offset))
                     {
                         yield return plainTextToken;

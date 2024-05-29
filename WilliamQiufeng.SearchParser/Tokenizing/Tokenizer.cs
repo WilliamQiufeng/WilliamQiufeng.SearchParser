@@ -6,8 +6,8 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Tokenizer : IEnumerable<Token>
     {
-        private readonly string _content;
         private readonly Queue<Token> _emittingTokens = new Queue<Token>();
+        internal readonly string Content;
         private ITokenizerState _currentState;
         private int _currentTokenEndPos = -1;
         private int _currentTokenStartPos;
@@ -15,7 +15,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         public Tokenizer(string content)
         {
-            _content = content;
+            Content = content;
             _currentState = EmptyState.State;
         }
 
@@ -26,8 +26,8 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             get
             {
                 var length = _currentTokenEndPos - _currentTokenStartPos + 1;
-                var segment = _currentTokenStartPos < _content.Length
-                    ? _content.AsMemory().Slice(_currentTokenStartPos, length)
+                var segment = _currentTokenStartPos < Content.Length
+                    ? Content.AsMemory().Slice(_currentTokenStartPos, length)
                     : new ReadOnlyMemory<char>();
                 return segment;
             }
@@ -50,14 +50,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         internal char Lookahead()
         {
-            return _lookaheadPos < _content.Length ? _content[_lookaheadPos] : '\0';
+            return _lookaheadPos < Content.Length ? Content[_lookaheadPos] : '\0';
         }
 
         internal char Consume()
         {
             var consumed = Lookahead();
             _currentTokenEndPos = _lookaheadPos;
-            if (_lookaheadPos < _content.Length)
+            if (_lookaheadPos < Content.Length)
                 _lookaheadPos++;
             return consumed;
         }
@@ -97,7 +97,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         ///     Continuously call <see cref="Next"/> until a token is emitted in the queue
         /// </summary>
         /// <returns></returns>
-        private Token NextToken()
+        public Token NextToken()
         {
             do
             {

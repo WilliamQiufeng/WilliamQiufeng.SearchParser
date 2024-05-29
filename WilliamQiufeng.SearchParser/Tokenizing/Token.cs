@@ -2,13 +2,17 @@ using System;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
-    public struct Token
+    public class Token
     {
         public readonly TokenKind Kind;
-        public readonly object? Value;
-        public readonly ReadOnlyMemory<char> Segment;
         public readonly int Offset;
+        public readonly ReadOnlyMemory<char> Segment;
+        public readonly object? Value;
         public bool IncludedInCriterion;
+
+        public Token()
+        {
+        }
 
         public Token(TokenKind kind, ReadOnlyMemory<char> segment = default, int offset = 0, object? content = default)
         {

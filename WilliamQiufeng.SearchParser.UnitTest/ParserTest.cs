@@ -68,7 +68,7 @@ public class ParserTest
         _targetCriteria = targetCriteriaConstructors.Cast<object?[]>().Select(p =>
         {
             var key = (string)p[0]!;
-            return new SearchCriterion(new ArraySegment<Token>(),
+            return new SearchCriterion(new TokenRange(),
                 new Token(TokenKind.PlainText, key.AsMemory(), 0, key),
                 new Token((TokenKind)p[1]!),
                 new Token(TokenKind.Unknown, new ReadOnlyMemory<char>(), 0, p[2]), (bool)p[3]!);
@@ -87,10 +87,10 @@ public class ParserTest
             tokenizer.KeywordTrie.Add(key, key);
         }
 
-        var parser = new Parser(tokenizer.ToArray());
+        var parser = new Parser(tokenizer);
         parser.Parse();
 
-        var terms = parser.GetPlainTextTerms(_source).ToArray();
+        var terms = parser.GetPlainTextTerms().ToArray();
         var criteria = parser.SearchCriteria;
         Assert.Multiple(() =>
         {
@@ -130,11 +130,11 @@ public class ParserTest
             tokenizer.KeywordTrie.Add(key, key);
         }
 
-        var parser = new Parser(tokenizer.ToArray());
+        var parser = new Parser(tokenizer);
         parser.SearchCriterionConstraint = _ => false;
         parser.Parse();
 
-        var terms = parser.GetPlainTextTerms(_source).ToArray();
+        var terms = parser.GetPlainTextTerms().ToArray();
         var criteria = parser.SearchCriteria;
         var targetTerms = Tokenizer.TokenizeAsPlainTextTokens(_source.AsMemory()).ToArray();
         Assert.Multiple(() =>

@@ -1,12 +1,11 @@
-using System;
 using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing
 {
-    public class SearchCriterion : Rule
+    public class SearchCriterion : Nonterminal
     {
-        public SearchCriterion(ArraySegment<Token> tokens, Token key, Token @operator, Token value, bool invert) :
-            base(tokens)
+        public SearchCriterion(TokenRange tokenRange, Token key, Token @operator, Token value, bool invert) :
+            base(tokenRange)
         {
             Key = key;
             Operator = @operator;
