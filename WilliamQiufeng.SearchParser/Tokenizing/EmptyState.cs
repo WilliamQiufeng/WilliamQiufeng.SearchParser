@@ -83,13 +83,11 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 case '.':
                     tokenizer.Consume();
                     return new RealState();
+                case >= '0' and <= '9':
+                    return new IntegerState();
+                case '"' or '\'':
+                    return new StringState();
             }
-
-            if (lookahead >= '0' && lookahead <= '9')
-                return new IntegerState();
-
-            if (lookahead == '"' || lookahead == '\'')
-                return new StringState();
 
             if (tokenizer.KeywordTrie.TryNext(lookahead, out _))
                 return new KeyState(tokenizer.KeywordTrie);

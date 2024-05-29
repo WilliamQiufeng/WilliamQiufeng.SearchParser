@@ -28,7 +28,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 return new TimeSpanState(_currentInteger);
             }
 
-            if (lookahead < '0' || lookahead > '9')
+            if (lookahead is < '0' or > '9')
                 return PlainTextState.State;
 
             tokenizer.Consume();

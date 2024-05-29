@@ -14,7 +14,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             if (lookahead == '\0')
                 return PlainTextState.State;
 
-            if ((lookahead == '"' || lookahead == '\'') && _quoteChar == '\0')
+            if (lookahead is '"' or '\'' && _quoteChar == '\0')
             {
                 _quoteChar = lookahead;
                 tokenizer.Consume();

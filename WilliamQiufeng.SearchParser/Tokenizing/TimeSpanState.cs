@@ -34,7 +34,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             var isDigit = lookahead >= '0' && lookahead <= '9';
 
             // We have reached the end: emit a token
-            if (lookahead == '\0' || lookahead == ' ')
+            if (lookahead is '\0' or ' ')
             {
                 // Finish up: record the last component
                 // '5:' (no digits for last component) and '1m25' (no unit) fails here
@@ -51,7 +51,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
             // Next character is a unit
             var trieNextMatch = (_currentTrie ?? Trie).TryNext(lookahead, out var subTrie);
-            if ((_formatKind == FormatKind.Unknown || _formatKind == FormatKind.Unit) && trieNextMatch)
+            if (_formatKind is FormatKind.Unknown or FormatKind.Unit && trieNextMatch)
             {
                 tokenizer.Consume();
                 _currentTrie = subTrie;
@@ -64,7 +64,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 SetFieldUnit();
 
             // Next character is a colon ':'
-            if ((_formatKind == FormatKind.Unknown || _formatKind == FormatKind.Colon) && lookahead == ':')
+            if (_formatKind is FormatKind.Unknown or FormatKind.Colon && lookahead == ':')
             {
                 tokenizer.Consume();
                 _formatKind = FormatKind.Colon;

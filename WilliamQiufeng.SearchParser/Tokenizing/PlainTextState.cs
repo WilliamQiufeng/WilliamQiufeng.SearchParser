@@ -9,7 +9,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             var lookahead = tokenizer.Lookahead();
 
             // We have reached a word boundary: emit a token
-            if (lookahead == '\0' || lookahead == ' ')
+            if (lookahead is '\0' or ' ')
             {
                 tokenizer.EmitToken(TokenKind.PlainText, tokenizer.BufferContent.ToString());
                 return EmptyState.State;

@@ -6,14 +6,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         {
             var lookahead = tokenizer.Lookahead();
 
-            if (lookahead == '\0' || lookahead == ' ')
+            if (lookahead is '\0' or ' ')
             {
                 if (!TryEmit(tokenizer))
                     return PlainTextState.State;
                 return EmptyState.State;
             }
 
-            if (lookahead != '.' && lookahead < '0' && lookahead > '9')
+            if (lookahead != '.' && lookahead is < '0' or > '9')
                 return PlainTextState.State;
 
             tokenizer.Consume();
