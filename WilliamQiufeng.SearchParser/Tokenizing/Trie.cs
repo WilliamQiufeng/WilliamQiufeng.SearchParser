@@ -5,7 +5,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class Trie<TCandidate>
     {
-        private readonly List<TCandidate> _candidateKeys = new();
+        private readonly List<TCandidate> _candidateKeys = [];
         private readonly Dictionary<char, Trie<TCandidate>> _next = new();
 
         public Trie()
@@ -20,21 +20,28 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             }
         }
 
+        public TCandidate? TerminalCandidate { get; private set; }
+
         public IReadOnlyCollection<TCandidate> Candidates => _candidateKeys;
 
-        public void Add(string fullKey, TCandidate value, int index = 0)
+        public void Add(string fullKey, TCandidate value)
         {
-            _candidateKeys.Add(value);
-            if (index == fullKey.Length)
-                return;
-            var keyChar = fullKey[index];
-            if (!_next.TryGetValue(keyChar, out var subTrie))
+            var currentTrie = this;
+            currentTrie._candidateKeys.Add(value);
+
+            foreach (var keyChar in fullKey)
             {
-                subTrie = new Trie<TCandidate>();
-                _next[keyChar] = subTrie;
+                if (!currentTrie._next.TryGetValue(keyChar, out var subTrie))
+                {
+                    subTrie = new Trie<TCandidate>();
+                    currentTrie._next[keyChar] = subTrie;
+                }
+
+                subTrie._candidateKeys.Add(value);
+                currentTrie = subTrie;
             }
 
-            subTrie.Add(fullKey, value, index + 1);
+            currentTrie.TerminalCandidate = value;
         }
 
         public bool TryNext(char keyChar, out Trie<TCandidate> subTrie)
