@@ -18,9 +18,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             // We have reached the end, or a relational operator is reached: emit the key token
             if (lookahead.IsEnumEnd())
             {
+                var isComplete = _trie.TerminalCandidate != null;
                 // emit the enum of top candidate
                 // override content with the full candidate content
-                tokenizer.EmitToken(TokenKind.Enum, _trie.Candidates.First());
+                tokenizer.EmitToken(TokenKind.Enum, _trie.TerminalCandidate ?? _trie.Candidates.First(), isComplete);
 
                 return EmptyState.State;
             }

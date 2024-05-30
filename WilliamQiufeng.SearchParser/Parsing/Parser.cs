@@ -10,6 +10,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public delegate KeyEnumResolveMode ValueKeyEnumResolver(Token key);
 
+    public delegate SearchCriterion? StrandedEnumProcessor(Token @enum);
+
     public class Parser(Tokenizer tokenizer)
     {
         private readonly Stack<int> _ruleStartIndex = new();
@@ -18,6 +20,12 @@ namespace WilliamQiufeng.SearchParser.Parsing
         private int _lookaheadPos;
         private Token? _lookaheadToken;
         private int _ruleEndPos = -1;
+
+        /// <summary>
+        ///     How to handle stranded enums (enums appearing without search filters (i.e. key=value)).
+        ///     Set to Disabled to disallow any stranded enums
+        /// </summary>
+        public StrandedEnumPolicy StrandedEnumPolicy = StrandedEnumPolicy.Default;
 
 
         public SearchCriterionConstraint SearchCriterionConstraint { get; set; } = _ => true;
@@ -34,7 +42,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
         /// </summary>
         public ValueKeyEnumResolver ValueKeyEnumResolver { get; set; } = _ => KeyEnumResolveMode.Enum;
 
+        public StrandedEnumProcessor StrandedEnumProcessor { get; set; } = _ => null;
+
         public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria;
+        public List<Token> StrandedEnums { get; } = [];
 
         internal Token Lookahead()
         {
@@ -221,9 +232,33 @@ namespace WilliamQiufeng.SearchParser.Parsing
                         MarkCriterionInclusion(range, success);
                         break;
                     }
+                    case TokenKind.Enum when StrandedEnumPolicy != StrandedEnumPolicy.Disabled:
+                        // Skip if the enum is not fully specified when it should be
+                        if (StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
+                            !lookahead.IsCompleteEnum)
+                        {
+                            Advance();
+                            break;
+                        }
+
+                        // Generate a search criterion using this stranded enum
+                        var generatedSearchCriterion = StrandedEnumProcessor(lookahead);
+
+                        // Null means the developer doesn't want to generate any criterion for this enum
+                        if (generatedSearchCriterion != null)
+                            _searchCriteria.Add(generatedSearchCriterion);
+
+                        StrandedEnums.Add(lookahead);
+
+                        // If stranded enums should not be included in plain text terms
+                        // We mark them as included in criterion, so it will be skipped in GetPlainTextTerms()
+                        if (!StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.IncludeInPlainText))
+                            lookahead.IncludedInCriterion = true;
+
+                        Advance();
+                        break;
                     default:
                         Advance();
-                        _tokens[_ruleEndPos].IncludedInCriterion = false;
                         break;
                 }
             }

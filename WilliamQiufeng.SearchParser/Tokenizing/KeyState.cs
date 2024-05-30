@@ -20,7 +20,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             {
                 // emit the key of top candidate
                 // override content with the full candidate content
-                tokenizer.EmitToken(TokenKind.Key, _trie.Candidates.First());
+                tokenizer.EmitToken(TokenKind.Key, _trie.TerminalCandidate ?? _trie.Candidates.First());
 
                 return EmptyState.State;
             }
