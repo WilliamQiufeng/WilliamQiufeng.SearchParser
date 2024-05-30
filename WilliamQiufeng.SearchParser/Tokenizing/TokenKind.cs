@@ -20,6 +20,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         MoreThanOrEqual,
         Contains,
         Not,
-        Or
+        Or,
+        And
     }
 }

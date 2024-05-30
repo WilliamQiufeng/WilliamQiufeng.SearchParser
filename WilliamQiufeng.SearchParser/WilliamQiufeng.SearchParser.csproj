@@ -11,7 +11,7 @@
         <RepositoryUrl>https://github.com/QiuFeng54321/WilliamQiufeng.SearchParser</RepositoryUrl>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <LangVersion>10</LangVersion>
+        <LangVersion>12</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

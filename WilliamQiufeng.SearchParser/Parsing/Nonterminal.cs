@@ -1,12 +1,7 @@
 namespace WilliamQiufeng.SearchParser.Parsing
 {
-    public class Nonterminal
+    public class Nonterminal(TokenRange tokenRange)
     {
-        public Nonterminal(TokenRange tokenRange)
-        {
-            TokenRange = tokenRange;
-        }
-
-        protected TokenRange TokenRange { get; set; }
+        public TokenRange TokenRange { get; set; } = tokenRange;
     }
 }

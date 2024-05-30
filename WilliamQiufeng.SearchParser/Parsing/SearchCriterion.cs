@@ -2,20 +2,12 @@ using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing
 {
-    public class SearchCriterion : Nonterminal
+    public class SearchCriterion(TokenRange tokenRange, Token key, Token @operator, Expression value, bool invert)
+        : Nonterminal(tokenRange)
     {
-        public SearchCriterion(TokenRange tokenRange, Token key, Token @operator, Token value, bool invert) :
-            base(tokenRange)
-        {
-            Key = key;
-            Operator = @operator;
-            Value = value;
-            Invert = invert;
-        }
-
-        public Token Key { get; set; }
-        public Token Operator { get; set; }
-        public Token Value { get; set; }
-        public bool Invert { get; set; }
+        public Token Key { get; } = key;
+        public Token Operator { get; } = @operator;
+        public Expression Value { get; } = value;
+        public bool Invert { get; } = invert;
     }
 }

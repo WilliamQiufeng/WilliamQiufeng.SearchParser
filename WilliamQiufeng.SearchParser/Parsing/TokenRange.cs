@@ -4,17 +4,11 @@ using System.Collections.Generic;
 
 namespace WilliamQiufeng.SearchParser.Parsing
 {
-    public readonly struct TokenRange : IEnumerable<int>
+    public readonly struct TokenRange(int start, int end) : IEnumerable<int>
     {
-        public readonly int Start;
-        public readonly int End;
+        public readonly int Start = start;
+        public readonly int End = end;
         public int Count => End - Start + 1;
-
-        public TokenRange(int start, int end)
-        {
-            Start = start;
-            End = end;
-        }
 
 
         public static TokenRange operator +(TokenRange current, TokenRange other)

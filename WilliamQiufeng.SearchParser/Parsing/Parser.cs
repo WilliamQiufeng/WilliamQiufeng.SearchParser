@@ -6,28 +6,39 @@ namespace WilliamQiufeng.SearchParser.Parsing
 {
     public delegate bool SearchCriterionConstraint(SearchCriterion searchCriterion);
 
-    public class Parser
+    public delegate ListCombinationKind CombinationKindTransform(Token key, ListCombinationKind combinationKind);
+
+    public delegate KeyEnumResolveMode ValueKeyEnumResolver(Token key);
+
+    public class Parser(Tokenizer tokenizer)
     {
         private readonly Stack<int> _ruleStartIndex = new();
-        private readonly List<SearchCriterion> _searchCriteria = new();
-        private readonly Tokenizer _tokenizer;
-        private readonly List<Token> _tokens = new();
+        private readonly List<SearchCriterion> _searchCriteria = [];
+        private readonly List<Token> _tokens = [];
         private int _lookaheadPos;
         private Token? _lookaheadToken;
         private int _ruleEndPos = -1;
 
-        public Parser(Tokenizer tokenizer)
-        {
-            _tokenizer = tokenizer;
-        }
-
 
         public SearchCriterionConstraint SearchCriterionConstraint { get; set; } = _ => true;
+
+        /// <summary>
+        ///     Changes whether the elements in a given list should be interpreted as an AND or an OR relation
+        /// </summary>
+        public CombinationKindTransform CombinationKindTransform { get; set; } =
+            (_, combinationKind) => combinationKind;
+
+        /// <summary>
+        ///     Decides if the value could be interpreted as keys, enums or only plaintext.
+        ///     For example, for tags you would not want to have enums resolved.
+        /// </summary>
+        public ValueKeyEnumResolver ValueKeyEnumResolver { get; set; } = _ => KeyEnumResolveMode.Enum;
+
         public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria;
 
         internal Token Lookahead()
         {
-            return _lookaheadToken ??= _tokenizer.NextToken();
+            return _lookaheadToken ??= tokenizer.NextToken();
         }
 
         internal Token Consume()
@@ -68,39 +79,68 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return new TokenRange(startIndex, endIndex);
         }
 
-        internal bool ParseValue(out Token? token)
+        internal bool ParseAtom(out AtomicValue value)
         {
             PushIndex();
             var lookahead = Lookahead();
 
-            switch (lookahead.Kind)
+            if (lookahead.Kind.IsValue())
             {
-                case TokenKind.Integer:
-                case TokenKind.Real:
-                case TokenKind.TimeSpan:
-                case TokenKind.String:
-                case TokenKind.PlainText:
-                case TokenKind.Percentage:
-                    token = lookahead;
-                    Advance();
-                    PopIndex();
-                    return true;
-                case TokenKind.Unknown:
-                case TokenKind.End:
-                case TokenKind.Key:
-                case TokenKind.Equal:
-                case TokenKind.NotEqual:
-                case TokenKind.LessThan:
-                case TokenKind.MoreThan:
-                case TokenKind.LessThanOrEqual:
-                case TokenKind.MoreThanOrEqual:
-                case TokenKind.Contains:
-                case TokenKind.Not:
-                case TokenKind.Or:
-                default:
-                    token = null;
-                    return Rewind(out _);
+                Advance();
+                var range = PopIndex();
+                value = new AtomicValue(range, lookahead);
+                return true;
             }
+
+            value = AtomicValue.Null;
+            _ = PopIndex();
+            return false;
+        }
+
+        internal bool ParseExpression(out Expression expression, KeyEnumResolveMode resolveMode)
+        {
+            PushIndex();
+
+            // We only want enums here, not keys
+            tokenizer.KeyEnumResolveMode = resolveMode;
+            var success = ParseAtom(out var startingValue);
+            expression = startingValue;
+
+            var combinationKind = ListCombinationKind.None;
+            while (true)
+            {
+                // We expect either and/or token or a key token next.
+                // We want to resolve keys if the next token is a key,
+                // Setting resolve mode makes Tokenizer.Lookahead tokenize both keys and enums 
+                tokenizer.KeyEnumResolveMode = KeyEnumResolveMode.Both;
+                if (expression is AtomicValue)
+                {
+                    if (!Match(TokenKind.Or, out var separator) && !Match(TokenKind.And, out separator))
+                        break;
+                    combinationKind = separator.Kind == TokenKind.Or
+                        ? ListCombinationKind.Or
+                        : ListCombinationKind.And;
+                    expression = new ListValue(new TokenRange(), [startingValue],
+                        combinationKind);
+                }
+                else if (combinationKind == ListCombinationKind.And && !Match(TokenKind.And, out _)
+                         || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
+                    break;
+
+                tokenizer.KeyEnumResolveMode = resolveMode;
+                if (!ParseAtom(out var nextValue))
+                {
+                    success = false;
+                    break;
+                }
+
+                ((ListValue)expression).Values.Add(nextValue);
+            }
+
+            // Recover
+            tokenizer.KeyEnumResolveMode = KeyEnumResolveMode.Both;
+            expression.TokenRange = PopIndex();
+            return success;
         }
 
         internal bool ParseSearchCriterion(out TokenRange range)
@@ -111,7 +151,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
             var keys = new HashSet<object?>();
             if (!Match(TokenKind.Key, out var keyToken))
             {
-                return Rewind(out range);
+                range = PopIndex();
+                return false;
             }
 
             keyTokens.Add(keyToken);
@@ -121,7 +162,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
             {
                 if (!Match(TokenKind.Key, out var trailingKeyToken))
                 {
-                    return Rewind(out range);
+                    range = PopIndex();
+                    return false;
                 }
 
                 if (keys.Add(trailingKeyToken.Value))
@@ -129,35 +171,26 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
 
             var operatorToken = Lookahead();
-            switch (operatorToken.Kind)
+            if (operatorToken.Kind.IsRelational())
             {
-                case TokenKind.Equal:
-                case TokenKind.NotEqual:
-                case TokenKind.LessThan:
-                case TokenKind.MoreThan:
-                case TokenKind.LessThanOrEqual:
-                case TokenKind.MoreThanOrEqual:
-                case TokenKind.Contains:
-                    Advance();
-                    break;
-                case TokenKind.Unknown:
-                case TokenKind.End:
-                case TokenKind.PlainText:
-                case TokenKind.Key:
-                case TokenKind.String:
-                case TokenKind.Integer:
-                case TokenKind.Real:
-                case TokenKind.TimeSpan:
-                case TokenKind.Percentage:
-                case TokenKind.Or:
-                case TokenKind.Not:
-                default:
-                    return Rewind(out range);
+                Advance();
+            }
+            else
+            {
+                range = PopIndex();
+                return false;
             }
 
-            if (!ParseValue(out var value))
+            var resolveMode = ValueKeyEnumResolver(keyToken);
+            if (!ParseExpression(out var value, resolveMode))
             {
-                return Rewind(out range);
+                range = PopIndex();
+                return false;
+            }
+
+            if (value is ListValue listValue)
+            {
+                listValue.CombinationKind = CombinationKindTransform(keyToken, listValue.CombinationKind);
             }
 
             range = PopIndex();
@@ -165,7 +198,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             var criteria = new List<SearchCriterion>();
             foreach (var key in keyTokens)
             {
-                var searchCriterion = new SearchCriterion(range, key, operatorToken, value ?? new Token(), invert);
+                var searchCriterion = new SearchCriterion(range, key, operatorToken, value, invert);
                 if (!SearchCriterionConstraint(searchCriterion))
                     return false;
                 criteria.Add(searchCriterion);
@@ -173,12 +206,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
             _searchCriteria.AddRange(criteria);
             return true;
-        }
-
-        private bool Rewind(out TokenRange tokenRange)
-        {
-            tokenRange = PopIndex();
-            return false;
         }
 
         public void Parse()
@@ -194,22 +221,25 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     case TokenKind.Key:
                     {
                         var success = ParseSearchCriterion(out var range);
-                        foreach (var index in range)
-                        {
-                            _tokens[index].MarkedAsPlain = !success;
-                            _tokens[index].IncludedInCriterion = success;
-                        }
-
+                        MarkCriterionInclusion(range, success);
                         break;
                     }
                     default:
                         Advance();
-                        _tokens[_ruleEndPos].MarkedAsPlain = true;
+                        _tokens[_ruleEndPos].IncludedInCriterion = false;
                         break;
                 }
             }
 
             Advance();
+        }
+
+        private void MarkCriterionInclusion(TokenRange range, bool success)
+        {
+            foreach (var index in range)
+            {
+                _tokens[index].IncludedInCriterion = success;
+            }
         }
 
         public IEnumerable<Token> GetPlainTextTerms()
@@ -224,7 +254,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
                     var start = plainTextConversionStartToken.Offset;
                     var end = token.Offset - 1;
-                    var segment = _tokenizer.Content.AsMemory().Slice(start, end - start + 1);
+                    var segment = tokenizer.Content.AsMemory().Slice(start, end - start + 1);
                     foreach (var plainTextToken in Tokenizer.TokenizeAsPlainTextTokens(segment, token.Offset))
                     {
                         yield return plainTextToken;

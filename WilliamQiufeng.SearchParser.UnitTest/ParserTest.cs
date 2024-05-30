@@ -53,26 +53,81 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
         new object[] { "source", TokenKind.Contains, "hi", false },
     },
     new[] { "123" })]
+[TestFixture(new[] { "title", "tag", "source" }, "tag:sv/electro 123", new object[]
+    {
+        new object[] { "tag", TokenKind.Contains, new object[] { "sv", "electro" }, false, ListCombinationKind.Or },
+    },
+    new[] { "123" })]
+[TestFixture(new[] { "mode" }, new[] { "quaver", "etterna", "osu", "malody" }, "m=q/o", new object[]
+    {
+        new object[] { "mode", TokenKind.Equal, new object[] { "quaver", "osu" }, false, ListCombinationKind.Or },
+    },
+    new string[0])]
 public class ParserTest
 {
+    [SetUp]
+    public void Setup()
+    {
+        _tokenizer = new Tokenizer(_source);
+        foreach (var key in _keys)
+        {
+            _tokenizer.KeywordTrie.Add(key, key);
+        }
+
+        foreach (var @enum in _enums)
+        {
+            _tokenizer.EnumTrie.Add(@enum, @enum);
+        }
+
+        _parser = new Parser(_tokenizer);
+    }
+
     private readonly string _source;
     private readonly SearchCriterion[] _targetCriteria;
     private readonly string[] _targetPlainTextTerms;
     private readonly string[] _keys;
+    private readonly string[] _enums;
+    private Tokenizer _tokenizer;
+    private Parser _parser;
 
-    public ParserTest(string[] keys, string source, object[] targetCriteriaConstructors, string[] targetPlainTextTerms)
+    public ParserTest(string[] keys, string[] enums, string source, object[] targetCriteriaConstructors,
+        string[] targetPlainTextTerms)
     {
         _source = source;
         _targetPlainTextTerms = targetPlainTextTerms;
         _keys = keys;
+        _enums = enums;
         _targetCriteria = targetCriteriaConstructors.Cast<object?[]>().Select(p =>
         {
             var key = (string)p[0]!;
+            Expression value;
+            if (p[2] is object[] list)
+            {
+                value = new ListValue(new TokenRange(), list.Select(DummyAtomicValue).ToList(),
+                    (ListCombinationKind)p[4]!);
+            }
+            else
+            {
+                value = DummyAtomicValue(p[2]!);
+            }
+
             return new SearchCriterion(new TokenRange(),
                 new Token(TokenKind.PlainText, key.AsMemory(), 0, key),
                 new Token((TokenKind)p[1]!),
-                new Token(TokenKind.Unknown, new ReadOnlyMemory<char>(), 0, p[2]), (bool)p[3]!);
+                value,
+                (bool)p[3]!);
         }).ToArray();
+    }
+
+    private static AtomicValue DummyAtomicValue(object v)
+    {
+        return new AtomicValue(new TokenRange(),
+            new Token(TokenKind.Unknown, new ReadOnlyMemory<char>(), 0, v));
+    }
+
+    public ParserTest(string[] keys, string source, object[] targetCriteriaConstructors, string[] targetPlainTextTerms)
+        : this(keys, [], source, targetCriteriaConstructors, targetPlainTextTerms)
+    {
     }
 
     /// <summary>
@@ -81,17 +136,9 @@ public class ParserTest
     [Test]
     public void Correct()
     {
-        var tokenizer = new Tokenizer(_source);
-        foreach (var key in _keys)
-        {
-            tokenizer.KeywordTrie.Add(key, key);
-        }
-
-        var parser = new Parser(tokenizer);
-        parser.Parse();
-
-        var terms = parser.GetPlainTextTerms().ToArray();
-        var criteria = parser.SearchCriteria;
+        _parser.Parse();
+        var terms = _parser.GetPlainTextTerms().ToArray();
+        var criteria = _parser.SearchCriteria;
         Assert.Multiple(() =>
         {
             Assert.That(terms, Has.Length.EqualTo(_targetPlainTextTerms.Length));
@@ -110,7 +157,8 @@ public class ParserTest
             {
                 Assert.That(criterion.Key.Value, Is.EqualTo(_targetCriteria[i].Key.Value));
                 if (_targetCriteria[i].Value.Value != null)
-                    Assert.That(criterion.Value.Value, Is.EqualTo(_targetCriteria[i].Value.Value));
+                    Assert.That(criterion.Value,
+                        Is.EqualTo(_targetCriteria[i].Value));
                 Assert.That(criterion.Operator.Value, Is.EqualTo(_targetCriteria[i].Operator.Value));
                 Assert.That(criterion.Invert, Is.EqualTo(_targetCriteria[i].Invert));
             });
@@ -124,18 +172,10 @@ public class ParserTest
     [Test]
     public void IgnoreAllKeys()
     {
-        var tokenizer = new Tokenizer(_source);
-        foreach (var key in _keys)
-        {
-            tokenizer.KeywordTrie.Add(key, key);
-        }
-
-        var parser = new Parser(tokenizer);
-        parser.SearchCriterionConstraint = _ => false;
-        parser.Parse();
-
-        var terms = parser.GetPlainTextTerms().ToArray();
-        var criteria = parser.SearchCriteria;
+        _parser.SearchCriterionConstraint = _ => false;
+        _parser.Parse();
+        var terms = _parser.GetPlainTextTerms().ToArray();
+        var criteria = _parser.SearchCriteria;
         var targetTerms = Tokenizer.TokenizeAsPlainTextTokens(_source.AsMemory()).ToArray();
         Assert.Multiple(() =>
         {
