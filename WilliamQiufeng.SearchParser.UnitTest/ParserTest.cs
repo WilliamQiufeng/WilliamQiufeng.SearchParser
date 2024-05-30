@@ -99,30 +99,13 @@ public class ParserTest
         _enums = enums;
         _targetCriteria = targetCriteriaConstructors.Cast<object?[]>().Select(p =>
         {
-            var key = (string)p[0]!;
-            Expression value;
-            if (p[2] is object[] list)
-            {
-                value = new ListValue(new TokenRange(), list.Select(DummyAtomicValue).ToList(),
-                    (ListCombinationKind)p[4]!);
-            }
-            else
-            {
-                value = DummyAtomicValue(p[2]!);
-            }
+            Expression value = p[2] is object[] list
+                ? new ListValue(TokenKind.Unknown, list,
+                    (ListCombinationKind)p[4]!)
+                : new AtomicValue(TokenKind.Unknown, p[2]!);
 
-            return new SearchCriterion(new TokenRange(),
-                new Token(TokenKind.PlainText, key.AsMemory(), 0, key),
-                new Token((TokenKind)p[1]!),
-                value,
-                (bool)p[3]!);
+            return new SearchCriterion(p[0], (TokenKind)p[1]!, value, (bool)p[3]!);
         }).ToArray();
-    }
-
-    private static AtomicValue DummyAtomicValue(object v)
-    {
-        return new AtomicValue(new TokenRange(),
-            new Token(TokenKind.Unknown, new ReadOnlyMemory<char>(), 0, v));
     }
 
     public ParserTest(string[] keys, string source, object[] targetCriteriaConstructors, string[] targetPlainTextTerms)

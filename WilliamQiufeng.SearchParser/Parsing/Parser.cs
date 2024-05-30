@@ -104,7 +104,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             {
                 Advance();
                 var range = PopIndex();
-                value = new AtomicValue(range, lookahead);
+                value = new AtomicValue(lookahead, range);
                 return true;
             }
 
@@ -136,8 +136,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     combinationKind = separator.Kind == TokenKind.Or
                         ? ListCombinationKind.Or
                         : ListCombinationKind.And;
-                    expression = new ListValue(new TokenRange(), [startingValue],
-                        combinationKind);
+                    expression = new ListValue([startingValue], combinationKind);
                 }
                 else if (combinationKind == ListCombinationKind.And && !Match(TokenKind.And, out _)
                          || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
@@ -214,7 +213,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             var criteria = new List<SearchCriterion>();
             foreach (var key in keyTokens)
             {
-                var searchCriterion = new SearchCriterion(range, key, operatorToken, value, invert);
+                var searchCriterion = new SearchCriterion(key, operatorToken, value, invert, range);
                 if (!SearchCriterionConstraint(searchCriterion))
                     return false;
                 criteria.Add(searchCriterion);

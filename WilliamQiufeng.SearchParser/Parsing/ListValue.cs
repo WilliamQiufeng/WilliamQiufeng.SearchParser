@@ -1,12 +1,22 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing;
 
-public class ListValue(TokenRange tokenRange, List<AtomicValue> values, ListCombinationKind combinationKind)
+public class ListValue(
+    List<AtomicValue> values,
+    ListCombinationKind combinationKind = ListCombinationKind.None,
+    TokenRange tokenRange = default)
     : Expression(tokenRange), IEquatable<ListValue>
 {
+    public ListValue(TokenKind elementKind, IEnumerable<object?> values,
+        ListCombinationKind combinationKind = ListCombinationKind.None)
+        : this(values.Select(v => new AtomicValue(elementKind, v)).ToList(), combinationKind)
+    {
+    }
+
     public List<AtomicValue> Values { get; } = values;
     public ListCombinationKind CombinationKind { get; internal set; } = combinationKind;
 
