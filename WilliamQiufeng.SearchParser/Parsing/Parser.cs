@@ -214,9 +214,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
             {
                 switch (lookahead.Kind)
                 {
-                    case TokenKind.PlainText:
-                        Advance();
-                        continue;
                     case TokenKind.Not:
                     case TokenKind.Key:
                     {
