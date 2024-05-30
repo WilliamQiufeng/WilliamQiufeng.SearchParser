@@ -10,12 +10,13 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public delegate KeyEnumResolveMode ValueKeyEnumResolver(Token key);
 
-    public delegate SearchCriterion? StrandedEnumProcessor(Token @enum);
+    public delegate IEnumerable<SearchCriterion> StrandedEnumProcessor(Expression expression);
 
     public class Parser(Tokenizer tokenizer)
     {
         private readonly Stack<int> _ruleStartIndex = new();
         private readonly List<SearchCriterion> _searchCriteria = [];
+        private readonly List<Expression> _strandedEnums = [];
         private readonly List<Token> _tokens = [];
         private int _lookaheadPos;
         private Token? _lookaheadToken;
@@ -42,10 +43,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
         /// </summary>
         public ValueKeyEnumResolver ValueKeyEnumResolver { get; set; } = _ => KeyEnumResolveMode.Enum;
 
-        public StrandedEnumProcessor StrandedEnumProcessor { get; set; } = _ => null;
+        public StrandedEnumProcessor StrandedEnumProcessor { get; set; } = _ => [];
 
-        public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria;
-        public List<Token> StrandedEnums { get; } = [];
+        public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria.AsReadOnly();
+        public IReadOnlyList<Expression> StrandedEnums => _strandedEnums.AsReadOnly();
 
         internal Token Lookahead()
         {
@@ -90,12 +91,16 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return new TokenRange(startIndex, endIndex);
         }
 
-        internal bool ParseAtom(out AtomicValue value)
+        internal bool ParseAtom(bool isStrandedValue, out AtomicValue value)
         {
             PushIndex();
             var lookahead = Lookahead();
 
-            if (lookahead.Kind.IsValue())
+            var success = lookahead.Kind.IsValue();
+            if (isStrandedValue && lookahead.Kind == TokenKind.Enum && !ValidateStrandedEnum(lookahead))
+                success = false;
+
+            if (success)
             {
                 Advance();
                 var range = PopIndex();
@@ -108,13 +113,13 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return false;
         }
 
-        internal bool ParseExpression(out Expression expression, KeyEnumResolveMode resolveMode)
+        internal bool ParseExpression(KeyEnumResolveMode resolveMode, bool isStrandedValue, out Expression expression)
         {
             PushIndex();
 
             // We only want enums here, not keys
             tokenizer.KeyEnumResolveMode = resolveMode;
-            var success = ParseAtom(out var startingValue);
+            var success = ParseAtom(isStrandedValue, out var startingValue);
             expression = startingValue;
 
             var combinationKind = ListCombinationKind.None;
@@ -139,7 +144,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     break;
 
                 tokenizer.KeyEnumResolveMode = resolveMode;
-                if (!ParseAtom(out var nextValue))
+                if (!ParseAtom(isStrandedValue, out var nextValue))
                 {
                     success = false;
                     break;
@@ -193,7 +198,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
 
             var resolveMode = ValueKeyEnumResolver(keyToken);
-            if (!ParseExpression(out var value, resolveMode))
+            if (!ParseExpression(resolveMode, false, out var value))
             {
                 range = PopIndex();
                 return false;
@@ -223,6 +228,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
         {
             while (Lookahead() is var lookahead && lookahead.Kind != TokenKind.End)
             {
+                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
                 switch (lookahead.Kind)
                 {
                     case TokenKind.Not:
@@ -232,31 +238,25 @@ namespace WilliamQiufeng.SearchParser.Parsing
                         MarkCriterionInclusion(range, success);
                         break;
                     }
-                    case TokenKind.Enum when StrandedEnumPolicy != StrandedEnumPolicy.Disabled:
-                        // Skip if the enum is not fully specified when it should be
-                        if (StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
-                            !lookahead.IsCompleteEnum)
-                        {
-                            Advance();
-                            break;
-                        }
+                    case TokenKind.Enum when StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.Enabled):
+                    {
+                        var success = ParseExpression(KeyEnumResolveMode.Enum, true, out var expression);
+                        if (!success) goto default;
 
-                        // Generate a search criterion using this stranded enum
-                        var generatedSearchCriterion = StrandedEnumProcessor(lookahead);
+                        _strandedEnums.Add(expression);
 
-                        // Null means the developer doesn't want to generate any criterion for this enum
-                        if (generatedSearchCriterion != null)
-                            _searchCriteria.Add(generatedSearchCriterion);
-
-                        StrandedEnums.Add(lookahead);
+                        // Generate search criteria using this stranded enum
+                        var generatedSearchCriteria = StrandedEnumProcessor(expression);
+                        _searchCriteria.AddRange(generatedSearchCriteria);
 
                         // If stranded enums should not be included in plain text terms
                         // We mark them as included in criterion, so it will be skipped in GetPlainTextTerms()
                         if (!StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.IncludeInPlainText))
-                            lookahead.IncludedInCriterion = true;
+                            MarkCriterionInclusion(expression.TokenRange, true);
 
                         Advance();
                         break;
+                    }
                     default:
                         Advance();
                         break;
@@ -264,6 +264,12 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
 
             Advance();
+        }
+
+        private bool ValidateStrandedEnum(Token lookahead)
+        {
+            return StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
+                   !lookahead.IsCompleteEnum;
         }
 
         private void MarkCriterionInclusion(TokenRange range, bool success)
