@@ -17,5 +17,10 @@ public enum StrandedEnumPolicy
     ///     Include the exact content of the enum in the plain text search terms
     /// </summary>
     IncludeInPlainText = 1 << 2,
-    Default = Enabled | RequireCompleteEnum | IncludeInPlainText
+
+    /// <summary>
+    ///     By default, stranded enums are allowed and would require complete names to identify themselves.
+    ///     Once recognized, they are not included in plain text search terms.
+    /// </summary>
+    Default = Enabled | RequireCompleteEnum
 }

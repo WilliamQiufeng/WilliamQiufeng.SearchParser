@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
     public class TimeSpanState : ITokenizerState
     {
-        public static readonly Trie<TimeSpanKind> Trie = new(new Dictionary<string, TimeSpanKind>
+        public static readonly Trie Trie = new(new Dictionary<string, (TokenKind TokenKind, object Value)>
         {
-            ["hours"] = TimeSpanKind.Hour,
-            ["hrs"] = TimeSpanKind.Hour,
-            ["minutes"] = TimeSpanKind.Minute,
-            ["seconds"] = TimeSpanKind.Second
+            ["hours"] = (TokenKind.TimeSpan, TimeSpanKind.Hour),
+            ["hrs"] = (TokenKind.TimeSpan, TimeSpanKind.Hour),
+            ["minutes"] = (TokenKind.TimeSpan, TimeSpanKind.Minute),
+            ["seconds"] = (TokenKind.TimeSpan, TimeSpanKind.Second)
         });
 
         private int _currentInteger;
 
-        private Trie<TimeSpanKind>? _currentTrie;
+        private Trie? _currentTrie;
         private FormatKind _formatKind = FormatKind.Unknown;
         private bool _hasAnyDigitRead = true;
         private int _hours = -1;
@@ -106,10 +105,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         private bool SetFieldUnit()
         {
-            if (_currentTrie == null)
+            if (_currentTrie == null || !_currentTrie.TopCandidate(TokenKind.TimeSpan, out var fieldUnit))
                 return false;
 
-            switch (_currentTrie.Candidates.First())
+            switch (fieldUnit)
             {
                 case TimeSpanKind.Hour when _hours == -1:
                     _hours = _currentInteger;

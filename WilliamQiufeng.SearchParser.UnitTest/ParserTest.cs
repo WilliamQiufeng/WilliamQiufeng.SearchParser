@@ -2,6 +2,7 @@ using WilliamQiufeng.SearchParser.Parsing;
 
 namespace WilliamQiufeng.SearchParser.UnitTest;
 
+#pragma warning disable CA1861
 // Empty
 [TestFixture(new string[0], "", new object[0], new string[0])]
 // Simple
@@ -63,6 +64,7 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
         new object[] { "mode", TokenKind.Equal, new object[] { "quaver", "osu" }, false, ListCombinationKind.Or },
     },
     new string[0])]
+#pragma warning restore CA1861
 public class ParserTest
 {
     [SetUp]
@@ -71,12 +73,12 @@ public class ParserTest
         _tokenizer = new Tokenizer(_source);
         foreach (var key in _keys)
         {
-            _tokenizer.KeywordTrie.Add(key, key);
+            _tokenizer.KeywordTrie.Add(key, TokenKind.Key, key);
         }
 
         foreach (var @enum in _enums)
         {
-            _tokenizer.EnumTrie.Add(@enum, @enum);
+            _tokenizer.KeywordTrie.Add(@enum, TokenKind.Enum, @enum);
         }
 
         _parser = new Parser(_tokenizer);

@@ -4,6 +4,8 @@ using StringSplitOptions = System.StringSplitOptions;
 namespace WilliamQiufeng.SearchParser.UnitTest;
 
 [TestFixture("", new int[0])]
+[TestFixture("a", new[] { 0 })]
+[TestFixture("a ", new[] { 0 })]
 [TestFixture("a b", new[] { 0, 2 })]
 [TestFixture("abc def", new[] { 0, 4 })]
 [TestFixture("abc  def", new[] { 0, 5 })]
@@ -16,8 +18,8 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
 public partial class PlainTextTokenizingTest
 {
     private readonly string _source;
-    private string[] _targetTokenContents;
-    private int[] _targetTokenOffsets;
+    private readonly string[] _targetTokenContents;
+    private readonly int[] _targetTokenOffsets;
 
     public PlainTextTokenizingTest(string source, int[] targetTokenOffsets)
     {

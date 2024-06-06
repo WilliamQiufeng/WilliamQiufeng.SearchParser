@@ -1,62 +1,60 @@
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
-    public class Trie<TCandidate>
+    using TrieCandidate = (TokenKind TokenKind, object Value);
+
+    public class Trie
     {
-        private readonly List<TCandidate> _candidateKeys = [];
-        private readonly Dictionary<char, Trie<TCandidate>> _next = new();
+        private readonly KeywordCandidates _candidateKeys = new();
+        private readonly Dictionary<char, Trie> _next = new();
 
         public Trie()
         {
         }
 
-        public Trie(IDictionary<string, TCandidate> candidates)
+        public Trie(Dictionary<string, TrieCandidate> candidates)
         {
-            foreach (var (key, value) in candidates)
+            foreach (var (key, (tokenKind, value)) in candidates)
             {
-                Add(key, value);
+                Add(key, tokenKind, value);
             }
         }
 
-        public TCandidate? TerminalCandidate { get; private set; }
+        public TrieCandidate? TerminalCandidate { get; private set; }
 
-        public IReadOnlyCollection<TCandidate> Candidates => _candidateKeys;
+        public IReadOnlyDictionary<TokenKind, List<object>> Candidates => _candidateKeys;
 
-        public void Add(string fullKey, TCandidate value)
+        public bool TopCandidate(TokenKind tokenKind, out object? value)
+        {
+            value = _candidateKeys.TryGetValue(tokenKind, out var list) ? list.FirstOrDefault() : null;
+            return value != null;
+        }
+
+        public void Add(string fullKey, TokenKind tokenKind, object value)
         {
             var currentTrie = this;
-            currentTrie._candidateKeys.Add(value);
+            currentTrie._candidateKeys.Add(tokenKind, value);
 
             foreach (var keyChar in fullKey)
             {
                 if (!currentTrie._next.TryGetValue(keyChar, out var subTrie))
                 {
-                    subTrie = new Trie<TCandidate>();
+                    subTrie = new Trie();
                     currentTrie._next[keyChar] = subTrie;
                 }
 
-                subTrie._candidateKeys.Add(value);
+                subTrie._candidateKeys.Add(tokenKind, value);
                 currentTrie = subTrie;
             }
 
-            currentTrie.TerminalCandidate = value;
+            currentTrie.TerminalCandidate = (tokenKind, value);
         }
 
-        public bool TryNext(char keyChar, out Trie<TCandidate> subTrie)
+        public bool TryNext(char keyChar, out Trie subTrie)
         {
             return _next.TryGetValue(keyChar, out subTrie);
-        }
-
-        public bool TryNext(ReadOnlySpan<char> segment, out Trie<TCandidate> subTrie)
-        {
-            subTrie = this;
-            foreach (var c in segment)
-                if (!subTrie.TryNext(c, out subTrie))
-                    return false;
-
-            return true;
         }
     }
 }

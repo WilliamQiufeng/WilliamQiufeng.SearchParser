@@ -94,48 +94,47 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
 })]
 public class TokenizingTest
 {
-    public Token[] ExpectedTokens;
-    public string Source;
-    public Tokenizer Tokenizer;
-    public bool CheckValue = true;
+    private readonly Token[] _expectedTokens;
+    private readonly Tokenizer _tokenizer;
+    private readonly bool _checkValue = true;
 
     public TokenizingTest(string source, object[] expected)
     {
-        Source = source;
-        CheckValue = expected.Cast<object[]>().All(o => o.Length >= 4);
-        ExpectedTokens = expected.Cast<object[]>()
-            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], CheckValue ? e[3] : null))
+        _checkValue = expected.Cast<object[]>().All(o => o.Length >= 4);
+        _expectedTokens = expected.Cast<object[]>()
+            .Select(e => new Token((TokenKind)e[0], ((string)e[1]).AsMemory(), (int)e[2], _checkValue ? e[3] : null))
             .ToArray();
-        Tokenizer = new Tokenizer(Source);
+        _tokenizer = new Tokenizer(source);
     }
 
     public TokenizingTest(string[] keys, string source, object[] expected) : this(source, expected)
     {
         foreach (var key in keys)
         {
-            Tokenizer.KeywordTrie.Add(key, key);
+            _tokenizer.KeywordTrie.Add(key, TokenKind.Key, key);
         }
     }
 
     [Test]
     public void Correct()
     {
-        var tokens = Tokenizer.ToArray();
+        var tokens = _tokenizer.ToArray();
         Assert.Multiple(() =>
         {
-            Assert.That(ExpectedTokens.Length + 1, Is.EqualTo(tokens.Length)); // Include End token
+            Assert.That(_expectedTokens.Length + 1, Is.EqualTo(tokens.Length)); // Include End token
             Assert.That(tokens[^1].Kind, Is.EqualTo(TokenKind.End));
         });
-        for (var i = 0; i < ExpectedTokens.Length; i++)
+        for (var i = 0; i < _expectedTokens.Length; i++)
         {
-            TestContext.WriteLine($"Expected: {ExpectedTokens[i]}, Found: {tokens[i]}");
+            TestContext.WriteLine($"Expected: {_expectedTokens[i]}, Found: {tokens[i]}");
+            tokens[i].TryCollapseKeyword(_expectedTokens[i].Kind, false);
             Assert.Multiple(() =>
             {
-                Assert.That(ExpectedTokens[i].Kind, Is.EqualTo(tokens[i].Kind));
-                Assert.That(ExpectedTokens[i].Segment.ToString(), Is.EqualTo(tokens[i].Segment.ToString()));
-                Assert.That(ExpectedTokens[i].Offset, Is.EqualTo(tokens[i].Offset));
-                if (CheckValue)
-                    Assert.That(ExpectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
+                Assert.That(_expectedTokens[i].Kind, Is.EqualTo(tokens[i].Kind));
+                Assert.That(_expectedTokens[i].Segment.ToString(), Is.EqualTo(tokens[i].Segment.ToString()));
+                Assert.That(_expectedTokens[i].Offset, Is.EqualTo(tokens[i].Offset));
+                if (_checkValue)
+                    Assert.That(_expectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
             });
         }
     }

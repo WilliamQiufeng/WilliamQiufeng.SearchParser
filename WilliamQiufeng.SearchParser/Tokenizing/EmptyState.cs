@@ -89,14 +89,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     return new StringState();
             }
 
-            return tokenizer.KeyEnumResolveMode switch
-            {
-                KeyEnumResolveMode.Key or KeyEnumResolveMode.Both when tokenizer.KeywordTrie.TryNext(lookahead, out _)
-                    => new KeyState(tokenizer.KeywordTrie),
-                KeyEnumResolveMode.Enum or KeyEnumResolveMode.Both when tokenizer.EnumTrie.TryNext(lookahead, out _)
-                    => new EnumState(tokenizer.EnumTrie),
-                _ => PlainTextState.State
-            };
+            if (tokenizer.KeywordTrie.TryNext(lookahead, out _))
+                return new KeyState(tokenizer.KeywordTrie);
+
+            return PlainTextState.State;
         }
     }
 }

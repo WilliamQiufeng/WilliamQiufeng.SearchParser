@@ -13,19 +13,14 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         private int _currentTokenStartPos;
         private int _lookaheadPos;
 
-        /// <summary>
-        ///     Whether to recognize keys or enums, or both, or ignore anything and treat them as plain texts
-        /// </summary>
-        internal KeyEnumResolveMode KeyEnumResolveMode = KeyEnumResolveMode.Both;
-
         public Tokenizer(string content)
         {
             Content = content;
             _currentState = EmptyState.State;
         }
 
-        public Trie<object> KeywordTrie { get; } = new();
-        public Trie<object> EnumTrie { get; } = new();
+        public Trie KeywordTrie { get; } = new();
+
 
         internal ReadOnlyMemory<char> BufferContent
         {
@@ -66,10 +61,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                 _lookaheadPos++;
         }
 
-        internal Token GenerateToken(TokenKind kind, object? content = default, bool isCompleteEnum = false)
+        internal Token GenerateToken(TokenKind kind, object? content = default, bool isCompleteKeyword = false)
         {
             var token = new Token(kind, BufferContent, _currentTokenStartPos, content);
-            token.IsCompleteEnum = isCompleteEnum;
+            token.IsCompleteKeyword = isCompleteKeyword;
             DiscardBuffer();
             return token;
         }
@@ -80,9 +75,9 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             _currentTokenEndPos = _currentTokenStartPos;
         }
 
-        internal void EmitToken(TokenKind kind, object? content = default, bool isCompleteEnum = false)
+        internal void EmitToken(TokenKind kind, object? content = default, bool isCompleteKeyword = false)
         {
-            EmitToken(GenerateToken(kind, content, isCompleteEnum));
+            EmitToken(GenerateToken(kind, content, isCompleteKeyword));
         }
 
         internal void EmitToken(Token token)

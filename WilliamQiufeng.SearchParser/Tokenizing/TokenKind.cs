@@ -5,6 +5,7 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         Unknown,
         End,
         PlainText,
+        Keyword,
         Key,
         Enum,
         String,

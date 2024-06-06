@@ -8,8 +8,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public delegate ListCombinationKind CombinationKindTransform(Token key, ListCombinationKind combinationKind);
 
-    public delegate KeyEnumResolveMode ValueKeyEnumResolver(Token key);
-
     public delegate IEnumerable<SearchCriterion> StrandedEnumProcessor(Expression expression);
 
     public class Parser(Tokenizer tokenizer)
@@ -26,7 +24,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
         ///     How to handle stranded enums (enums appearing without search filters (i.e. key=value)).
         ///     Set to Disabled to disallow any stranded enums
         /// </summary>
-        public StrandedEnumPolicy StrandedEnumPolicy = StrandedEnumPolicy.Default;
+        public StrandedEnumPolicy EnumPolicy { get; set; } = StrandedEnumPolicy.Default;
+
+        internal bool RequireCompleteStrandedEnum => EnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum);
 
 
         public SearchCriterionConstraint SearchCriterionConstraint { get; set; } = _ => true;
@@ -36,12 +36,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
         /// </summary>
         public CombinationKindTransform CombinationKindTransform { get; set; } =
             (_, combinationKind) => combinationKind;
-
-        /// <summary>
-        ///     Decides if the value could be interpreted as keys, enums or only plaintext.
-        ///     For example, for tags you would not want to have enums resolved.
-        /// </summary>
-        public ValueKeyEnumResolver ValueKeyEnumResolver { get; set; } = _ => KeyEnumResolveMode.Enum;
 
         public StrandedEnumProcessor StrandedEnumProcessor { get; set; } = _ => [];
 
@@ -79,6 +73,16 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return true;
         }
 
+        internal bool MatchKeyword(TokenKind tokenKind, bool requireCompleteKeyword, out Token consumed)
+        {
+            consumed = Lookahead();
+            if (!consumed.TryCollapseKeyword(tokenKind, requireCompleteKeyword))
+                return false;
+
+            Advance();
+            return true;
+        }
+
         internal void PushIndex()
         {
             _ruleStartIndex.Push(_lookaheadPos);
@@ -96,8 +100,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
             PushIndex();
             var lookahead = Lookahead();
 
-            var success = lookahead.Kind.IsValue();
-            if (isStrandedValue && lookahead.Kind == TokenKind.Enum && !ValidateStrandedEnum(lookahead))
+            var success = !isStrandedValue && lookahead.TryCollapseKeyword(TokenKind.Enum, false)
+                          || lookahead.Kind.IsValue();
+            if (isStrandedValue && !lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteStrandedEnum))
                 success = false;
 
             if (success)
@@ -113,22 +118,16 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return false;
         }
 
-        internal bool ParseExpression(KeyEnumResolveMode resolveMode, bool isStrandedValue, out Expression expression)
+        internal bool ParseExpression(bool isStrandedValue, out Expression expression)
         {
             PushIndex();
 
-            // We only want enums here, not keys
-            tokenizer.KeyEnumResolveMode = resolveMode;
             var success = ParseAtom(isStrandedValue, out var startingValue);
             expression = startingValue;
 
             var combinationKind = ListCombinationKind.None;
             while (true)
             {
-                // We expect either and/or token or a key token next.
-                // We want to resolve keys if the next token is a key,
-                // Setting resolve mode makes Tokenizer.Lookahead tokenize both keys and enums 
-                tokenizer.KeyEnumResolveMode = KeyEnumResolveMode.Both;
                 if (expression is AtomicValue)
                 {
                     if (!Match(TokenKind.Or, out var separator) && !Match(TokenKind.And, out separator))
@@ -142,7 +141,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
                          || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
                     break;
 
-                tokenizer.KeyEnumResolveMode = resolveMode;
                 if (!ParseAtom(isStrandedValue, out var nextValue))
                 {
                     success = false;
@@ -152,8 +150,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
                 ((ListValue)expression).Values.Add(nextValue);
             }
 
-            // Recover
-            tokenizer.KeyEnumResolveMode = KeyEnumResolveMode.Both;
             expression.TokenRange = PopIndex();
             return success;
         }
@@ -164,7 +160,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             var invert = Match(TokenKind.Not, out _);
             var keyTokens = new List<Token>();
             var keys = new HashSet<object?>();
-            if (!Match(TokenKind.Key, out var keyToken))
+            if (!MatchKeyword(TokenKind.Key, false, out var keyToken))
             {
                 range = PopIndex();
                 return false;
@@ -175,7 +171,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
             while (Match(TokenKind.Or, out _))
             {
-                if (!Match(TokenKind.Key, out var trailingKeyToken))
+                if (!MatchKeyword(TokenKind.Key, false, out var trailingKeyToken))
                 {
                     range = PopIndex();
                     return false;
@@ -196,8 +192,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                 return false;
             }
 
-            var resolveMode = ValueKeyEnumResolver(keyToken);
-            if (!ParseExpression(resolveMode, false, out var value))
+            if (!ParseExpression(false, out var value))
             {
                 range = PopIndex();
                 return false;
@@ -227,38 +222,26 @@ namespace WilliamQiufeng.SearchParser.Parsing
         {
             while (Lookahead() is var lookahead && lookahead.Kind != TokenKind.End)
             {
-                // ReSharper disable once SwitchStatementHandlesSomeKnownEnumValuesWithDefault
-                switch (lookahead.Kind)
+                if (ParseExpression(true, out var strandedExpression))
                 {
-                    case TokenKind.Not:
-                    case TokenKind.Key:
-                    {
-                        var success = ParseSearchCriterion(out var range);
-                        MarkCriterionInclusion(range, success);
-                        break;
-                    }
-                    case TokenKind.Enum when StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.Enabled):
-                    {
-                        var success = ParseExpression(KeyEnumResolveMode.Enum, true, out var expression);
-                        if (!success) goto default;
+                    _strandedEnums.Add(strandedExpression);
 
-                        _strandedEnums.Add(expression);
+                    // Generate search criteria using this stranded enum
+                    var generatedSearchCriteria = StrandedEnumProcessor(strandedExpression);
+                    _searchCriteria.AddRange(generatedSearchCriteria);
 
-                        // Generate search criteria using this stranded enum
-                        var generatedSearchCriteria = StrandedEnumProcessor(expression);
-                        _searchCriteria.AddRange(generatedSearchCriteria);
-
-                        // If stranded enums should not be included in plain text terms
-                        // We mark them as included in criterion, so it will be skipped in GetPlainTextTerms()
-                        if (!StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.IncludeInPlainText))
-                            MarkCriterionInclusion(expression.TokenRange, true);
-
-                        Advance();
-                        break;
-                    }
-                    default:
-                        Advance();
-                        break;
+                    // If stranded enums should not be included in plain text terms
+                    // We mark them as included in criterion, so it will be skipped in GetPlainTextTerms()
+                    if (!EnumPolicy.HasFlag(StrandedEnumPolicy.IncludeInPlainText))
+                        MarkCriterionInclusion(strandedExpression.TokenRange, true);
+                }
+                else if (ParseSearchCriterion(out var range))
+                {
+                    MarkCriterionInclusion(range, true);
+                }
+                else
+                {
+                    Advance();
                 }
             }
 
@@ -267,8 +250,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
         private bool ValidateStrandedEnum(Token lookahead)
         {
-            return StrandedEnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
-                   !lookahead.IsCompleteEnum;
+            return EnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
+                   !lookahead.IsCompleteKeyword;
         }
 
         private void MarkCriterionInclusion(TokenRange range, bool success)

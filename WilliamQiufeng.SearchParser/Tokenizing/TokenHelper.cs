@@ -19,17 +19,12 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
 
         public static bool IsKeyEnd(this char c)
         {
-            return c.IsWordBoundary() || c.IsLookaheadOperator() || c.IsOr();
+            return c.IsWordBoundary() || c.IsLookaheadOperator() || c.IsOr() || c.IsListDelimiter();
         }
 
         public static bool IsWordBoundary(this char c)
         {
             return c is '\0' or ' ';
-        }
-
-        public static bool IsEnumEnd(this char c)
-        {
-            return c.IsWordBoundary() || c == ',' || c.IsOr();
         }
 
         public static bool IsRelational(this TokenKind tokenKind)
