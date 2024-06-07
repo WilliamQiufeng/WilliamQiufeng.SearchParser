@@ -29,6 +29,15 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.Key, "bbc", 12, "bbc" },
     new object[] { TokenKind.PlainText, "aac", 16, "aac" }
 })]
+[TestFixture(new[] { "4key", "7key" }, "4 4k 4key 4keya 7 7k", new object[]
+{
+    new object[] { TokenKind.Integer, "4", 0, 4 },
+    new object[] { TokenKind.Key, "4k", 2, "4key" },
+    new object[] { TokenKind.Key, "4key", 5, "4key" },
+    new object[] { TokenKind.PlainText, "4keya", 10, "4keya" },
+    new object[] { TokenKind.Integer, "7", 16, 7 },
+    new object[] { TokenKind.Key, "7k", 18, "7key" }
+})]
 [TestFixture(new[] { "a1", "ab" }, "a1 1a 123 0012 8%", new object[]
 {
     new object[] { TokenKind.Key, "a1", 0, "a1" },

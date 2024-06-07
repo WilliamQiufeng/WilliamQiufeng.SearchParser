@@ -29,7 +29,11 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             }
 
             if (lookahead is < '0' or > '9')
-                return PlainTextState.State;
+            {
+                return tokenizer.KeywordTrie.TryNext(tokenizer.BufferContent.Span, out var subTrie)
+                    ? new KeyState(subTrie)
+                    : PlainTextState.State;
+            }
 
             tokenizer.Advance();
             _currentInteger = _currentInteger * 10 + lookahead - '0';

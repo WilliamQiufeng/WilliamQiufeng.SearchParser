@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -55,6 +56,18 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
         public bool TryNext(char keyChar, out Trie subTrie)
         {
             return _next.TryGetValue(keyChar, out subTrie);
+        }
+
+        public bool TryNext(ReadOnlySpan<char> existingKey, out Trie subTrie)
+        {
+            subTrie = this;
+            foreach (var c in existingKey)
+            {
+                if (!subTrie.TryNext(c, out subTrie))
+                    return false;
+            }
+
+            return true;
         }
     }
 }
