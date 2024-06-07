@@ -9,7 +9,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public delegate ListCombinationKind CombinationKindTransform(Token key, ListCombinationKind combinationKind);
 
-    public delegate IEnumerable<SearchCriterion> SingletonEnumProcessor(Expression expression);
+    public delegate IEnumerable<SearchCriterion> SingletonEnumProcessor(ListValue listValue);
 
     public class Parser(Tokenizer tokenizer)
     {
@@ -112,24 +112,24 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return false;
         }
 
-        internal bool ParseExpression(bool isSingletonValue, out Expression expression)
+        internal bool ParseExpression(bool isSingletonValue, out ListValue listValue)
         {
             PushIndex();
 
             var success = ParseAtom(isSingletonValue, out var startingValue);
-            expression = startingValue;
 
             var combinationKind = ListCombinationKind.None;
+            listValue = new ListValue([startingValue], combinationKind);
+
             while (true)
             {
-                if (expression is AtomicValue)
+                if (listValue.Count == 1)
                 {
                     if (!Match(TokenKind.Or, out var separator) && !Match(TokenKind.And, out separator))
                         break;
                     combinationKind = separator.Kind == TokenKind.Or
                         ? ListCombinationKind.Or
                         : ListCombinationKind.And;
-                    expression = new ListValue([startingValue], combinationKind);
                 }
                 else if (combinationKind == ListCombinationKind.And && !Match(TokenKind.And, out _)
                          || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
@@ -141,10 +141,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     break;
                 }
 
-                ((ListValue)expression).Values.Add(nextValue);
+                listValue.Add(nextValue);
             }
 
-            expression.TokenRange = PopIndex();
+            listValue.TokenRange = PopIndex();
             return success;
         }
 
@@ -192,10 +192,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                 return false;
             }
 
-            if (value is ListValue listValue)
-            {
-                listValue.CombinationKind = CombinationKindTransform(keyToken, listValue.CombinationKind);
-            }
+            value.CombinationKind = CombinationKindTransform(keyToken, value.CombinationKind);
 
             range = PopIndex();
 

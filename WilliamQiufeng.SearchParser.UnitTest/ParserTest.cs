@@ -101,10 +101,10 @@ public class ParserTest
         _enums = enums;
         _targetCriteria = targetCriteriaConstructors.Cast<object?[]>().Select(p =>
         {
-            Expression value = p[2] is object[] list
+            var value = p[2] is object[] list
                 ? new ListValue(TokenKind.Unknown, list,
                     (ListCombinationKind)p[4]!)
-                : new AtomicValue(TokenKind.Unknown, p[2]!);
+                : new ListValue(TokenKind.Unknown, [p[2]!]);
 
             return new SearchCriterion(p[0], (TokenKind)p[1]!, value, (bool)p[3]!);
         }).ToArray();
@@ -141,9 +141,13 @@ public class ParserTest
             Assert.Multiple(() =>
             {
                 Assert.That(criterion.Key.Value, Is.EqualTo(_targetCriteria[i].Key.Value));
-                if (_targetCriteria[i].Value.Value != null)
-                    Assert.That(criterion.Value,
-                        Is.EqualTo(_targetCriteria[i].Value));
+                Assert.That(criterion.Values, Has.Count.EqualTo(_targetCriteria[i].Values.Count));
+                for (var j = 0; j < criterion.Values.Count; j++)
+                {
+                    if (_targetCriteria[i].Values[j].Value != null)
+                        Assert.That(criterion.Values[j].Value, Is.EqualTo(_targetCriteria[i].Values[j].Value));
+                }
+
                 Assert.That(criterion.Operator.Value, Is.EqualTo(_targetCriteria[i].Operator.Value));
                 Assert.That(criterion.Invert, Is.EqualTo(_targetCriteria[i].Invert));
             });
