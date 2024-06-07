@@ -135,7 +135,13 @@ namespace WilliamQiufeng.SearchParser.Parsing
                 }
                 else if (combinationKind == ListCombinationKind.And && !Match(TokenKind.And, out _)
                          || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
+                {
+                    // Two cases here:
+                    // 1. Not success: Inconsistent combination kind (a,b/c or a/b,c etc.), lookahead must be either 'And' or 'Or'
+                    // 2. Success: End of list, lookahead is neither 'And' nor 'Or'.
+                    success = Lookahead().Kind is not (TokenKind.And or TokenKind.Or);
                     break;
+                }
 
                 if (!ParseAtom(isSingletonValue, out var nextValue))
                 {
