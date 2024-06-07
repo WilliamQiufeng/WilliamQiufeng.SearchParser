@@ -56,11 +56,13 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     },
     new[] { "123" })]
 // List of values
-[TestFixture(new[] { "title", "tag", "source" }, "tag:sv/electro 123", new object[]
+[TestFixture(new[] { "title", "tag", "source" }, "tag:sv/electro tag:a,b tag:c tag:a,b/ 123", new object[]
     {
         new object[] { "tag", TokenKind.Contains, new object[] { "sv", "electro" }, false, ListCombinationKind.Or },
+        new object[] { "tag", TokenKind.Contains, new object[] { "a", "b" }, false, ListCombinationKind.And },
+        new object[] { "tag", TokenKind.Contains, new object[] { "c" }, false, ListCombinationKind.None },
     },
-    new[] { "123" })]
+    new[] { "tag:a,b/", "123" })]
 // Enums
 [TestFixture(new[] { "mode" }, new[] { "quaver", "etterna", "osu", "malody" }, "m=q/o", new object[]
     {

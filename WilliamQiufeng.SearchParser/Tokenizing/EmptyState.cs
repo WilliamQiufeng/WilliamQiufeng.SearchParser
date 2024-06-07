@@ -76,6 +76,10 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
                     tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Or);
                     return this;
+                case ',':
+                    tokenizer.Advance();
+                    tokenizer.EmitToken(TokenKind.And);
+                    return this;
                 case ':':
                     tokenizer.Advance();
                     tokenizer.EmitToken(TokenKind.Contains);

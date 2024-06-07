@@ -2,6 +2,11 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
 
 [TestFixture("", new object[] { })]
 [TestFixture("a", new object[] { new object[] { TokenKind.PlainText, "a", 0, "a" } })]
+[TestFixture("a,", new object[]
+{
+    new object[] { TokenKind.PlainText, "a", 0, "a" },
+    new object[] { TokenKind.And, ",", 1, null! },
+})]
 [TestFixture("a b", new object[]
 {
     new object[] { TokenKind.PlainText, "a", 0, "a" },
