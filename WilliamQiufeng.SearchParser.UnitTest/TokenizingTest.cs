@@ -92,6 +92,22 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     new object[] { TokenKind.PlainText, "1::1", 71 },
     new object[] { TokenKind.PlainText, "1ms", 76 },
 })]
+[TestFixture(new[] { "mode" }, new[] { "quaver", "etterna", "osu", "malody" }, "m=q/o/m", new object[]
+{
+    new object[] { TokenKind.Key, "m", 0, "mode" },
+    new object[] { TokenKind.Equal, "=", 1, default! },
+    new object[] { TokenKind.Enum, "q", 2, "quaver" },
+    new object[] { TokenKind.Or, "/", 3, default! },
+    new object[] { TokenKind.Enum, "o", 4, "osu" },
+    new object[] { TokenKind.Or, "/", 5, default! },
+    new object[] { TokenKind.Enum, "m", 6, "malody" },
+})]
+[TestFixture(new[] { "mode" }, new[] { "quaver", "etterna", "osu", "malody" }, "m=mo", new object[]
+{
+    new object[] { TokenKind.Key, "m", 0, "mode" },
+    new object[] { TokenKind.Equal, "=", 1, default! },
+    new object[] { TokenKind.Keyword, "mo", 2, default! },
+})]
 public class TokenizingTest
 {
     private readonly Token[] _expectedTokens;
@@ -107,11 +123,20 @@ public class TokenizingTest
         _tokenizer = new Tokenizer(source);
     }
 
-    public TokenizingTest(string[] keys, string source, object[] expected) : this(source, expected)
+    public TokenizingTest(string[] keys, string source, object[] expected) : this(keys, [], source, expected)
+    {
+    }
+
+    public TokenizingTest(string[] keys, string[] enums, string source, object[] expected) : this(source, expected)
     {
         foreach (var key in keys)
         {
             _tokenizer.KeywordTrie.Add(key, TokenKind.Key, key);
+        }
+
+        foreach (var @enum in enums)
+        {
+            _tokenizer.KeywordTrie.Add(@enum, TokenKind.Enum, @enum);
         }
     }
 
@@ -127,13 +152,17 @@ public class TokenizingTest
         for (var i = 0; i < _expectedTokens.Length; i++)
         {
             TestContext.WriteLine($"Expected: {_expectedTokens[i]}, Found: {tokens[i]}");
-            tokens[i].TryCollapseKeyword(_expectedTokens[i].Kind, false);
+            if (tokens[i].TryCollapseKeyword(_expectedTokens[i].Kind, false))
+            {
+                TestContext.WriteLine($"Collapsed into {tokens[i]}");
+            }
+
             Assert.Multiple(() =>
             {
                 Assert.That(_expectedTokens[i].Kind, Is.EqualTo(tokens[i].Kind));
                 Assert.That(_expectedTokens[i].Segment.ToString(), Is.EqualTo(tokens[i].Segment.ToString()));
                 Assert.That(_expectedTokens[i].Offset, Is.EqualTo(tokens[i].Offset));
-                if (_checkValue)
+                if (_checkValue && _expectedTokens[i].Value != null)
                     Assert.That(_expectedTokens[i].Value, Is.EqualTo(tokens[i].Value));
             });
         }
