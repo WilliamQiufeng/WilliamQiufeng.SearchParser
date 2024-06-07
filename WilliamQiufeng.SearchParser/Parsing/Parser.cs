@@ -257,7 +257,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
             Token? plainTextConversionStartToken = null;
             foreach (var token in _tokens)
             {
-                if (token.IncludedInCriterion || token.Kind == TokenKind.End)
+                if (token.IncludedInCriterion || token.Kind is TokenKind.End or TokenKind.String)
                 {
                     if (plainTextConversionStartToken == null)
                         continue;
@@ -271,6 +271,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     }
 
                     plainTextConversionStartToken = null;
+
+                    if (!token.IncludedInCriterion && token.Kind == TokenKind.String)
+                    {
+                        yield return token;
+                    }
                 }
                 else
                 {

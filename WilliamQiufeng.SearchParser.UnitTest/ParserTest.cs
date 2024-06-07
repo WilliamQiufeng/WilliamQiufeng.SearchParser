@@ -28,12 +28,12 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     },
     new[] { "sec" })]
 // Strings, invert
-[TestFixture(new[] { "title", "tag", "source" }, "t:\"except you\" !tag:\"> <\" is", new object[]
+[TestFixture(new[] { "title", "tag", "source" }, "t:\"except you\" !tag:\"> <\" is 'hello world'", new object[]
     {
         new object[] { "title", TokenKind.Contains, "except you", false },
         new object[] { "tag", TokenKind.Contains, "> <", true },
     },
-    new[] { "is" })]
+    new[] { "is", "hello world" }, true)]
 // Invalid criteria
 [TestFixture(new[] { "title", "tag", "source" }, "t:! d>890 t:2 :3 |123 t! !3 t/3", new object[]
     {
@@ -55,11 +55,13 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
         new object[] { "source", TokenKind.Contains, "hi", false },
     },
     new[] { "123" })]
+// List of values
 [TestFixture(new[] { "title", "tag", "source" }, "tag:sv/electro 123", new object[]
     {
         new object[] { "tag", TokenKind.Contains, new object[] { "sv", "electro" }, false, ListCombinationKind.Or },
     },
     new[] { "123" })]
+// Enums
 [TestFixture(new[] { "mode" }, new[] { "quaver", "etterna", "osu", "malody" }, "m=q/o", new object[]
     {
         new object[] { "mode", TokenKind.Equal, new object[] { "quaver", "osu" }, false, ListCombinationKind.Or },
@@ -92,6 +94,7 @@ public class ParserTest
     private readonly string[] _enums;
     private Tokenizer _tokenizer;
     private Parser _parser;
+    private bool _bypassIgnoreKeysCheck;
 
     public ParserTest(string[] keys, string[] enums, string source, object[] targetCriteriaConstructors,
         string[] targetPlainTextTerms)
@@ -114,6 +117,13 @@ public class ParserTest
     public ParserTest(string[] keys, string source, object[] targetCriteriaConstructors, string[] targetPlainTextTerms)
         : this(keys, [], source, targetCriteriaConstructors, targetPlainTextTerms)
     {
+    }
+
+    public ParserTest(string[] keys, string source, object[] targetCriteriaConstructors, string[] targetPlainTextTerms,
+        bool bypassIgnoreKeysCheck)
+        : this(keys, [], source, targetCriteriaConstructors, targetPlainTextTerms)
+    {
+        _bypassIgnoreKeysCheck = bypassIgnoreKeysCheck;
     }
 
     /// <summary>
@@ -162,6 +172,8 @@ public class ParserTest
     [Test]
     public void IgnoreAllKeys()
     {
+        if (_bypassIgnoreKeysCheck)
+            Assert.Pass("Bypassed as specified in test fixture.");
         _parser.SearchCriterionConstraint = _ => false;
         _parser.Parse();
         var terms = _parser.GetPlainTextTerms().ToArray();
