@@ -4,22 +4,16 @@ using System.Collections.Generic;
 
 namespace WilliamQiufeng.SearchParser.Tokenizing
 {
-    public class Tokenizer : IEnumerable<Token>
+    public class Tokenizer(string content) : IEnumerable<Token>
     {
         private readonly Queue<Token> _emittingTokens = new();
-        internal readonly string Content;
-        private ITokenizerState _currentState;
+        internal readonly string Content = content;
+        private ITokenizerState _currentState = EmptyState.State;
         private int _currentTokenEndPos = -1;
         private int _currentTokenStartPos;
         private int _lookaheadPos;
 
-        public Tokenizer(string content)
-        {
-            Content = content;
-            _currentState = EmptyState.State;
-        }
-
-        public Trie KeywordTrie { get; } = new();
+        public Trie KeywordTrie { get; set; } = new();
 
 
         internal ReadOnlyMemory<char> BufferContent
