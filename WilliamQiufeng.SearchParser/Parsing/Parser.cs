@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing
@@ -45,13 +46,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
         internal Token Lookahead()
         {
             return _lookaheadToken ??= tokenizer.NextToken();
-        }
-
-        internal Token Consume()
-        {
-            var consumed = Lookahead();
-            Advance();
-            return consumed;
         }
 
         private void Advance()
@@ -102,8 +96,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
             var success = !isSingletonValue && lookahead.TryCollapseKeyword(TokenKind.Enum, false)
                           || lookahead.Kind.IsValue();
-            if (isSingletonValue && !lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteSingletonEnum))
-                success = false;
+            if (isSingletonValue)
+                success = lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteSingletonEnum);
 
             if (success)
             {
@@ -227,7 +221,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
                     _singletonEnums.Add(singletonExpression);
 
                     // Generate search criteria using this singleton enum
-                    var generatedSearchCriteria = SingletonEnumProcessor(singletonExpression);
+                    // We perform rollback if any of the criteria generated does not match the constraint function
+                    var generatedSearchCriteria = SingletonEnumProcessor(singletonExpression).ToList();
+                    if (generatedSearchCriteria.Any(c => !SearchCriterionConstraint(c))) continue;
+
                     _searchCriteria.AddRange(generatedSearchCriteria);
 
                     // If singleton enums should not be included in plain text terms
@@ -246,12 +243,6 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
 
             Advance();
-        }
-
-        private bool ValidateSingletonEnum(Token lookahead)
-        {
-            return EnumPolicy.HasFlag(SingletonEnumPolicy.RequireCompleteEnum) &&
-                   !lookahead.IsCompleteKeyword;
         }
 
         private void MarkCriterionInclusion(TokenRange range, bool success)
