@@ -8,25 +8,25 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
     public delegate ListCombinationKind CombinationKindTransform(Token key, ListCombinationKind combinationKind);
 
-    public delegate IEnumerable<SearchCriterion> StrandedEnumProcessor(Expression expression);
+    public delegate IEnumerable<SearchCriterion> SingletonEnumProcessor(Expression expression);
 
     public class Parser(Tokenizer tokenizer)
     {
         private readonly Stack<int> _ruleStartIndex = new();
         private readonly List<SearchCriterion> _searchCriteria = [];
-        private readonly List<Expression> _strandedEnums = [];
+        private readonly List<Expression> _singletonEnums = [];
         private readonly List<Token> _tokens = [];
         private int _lookaheadPos;
         private Token? _lookaheadToken;
         private int _ruleEndPos = -1;
 
         /// <summary>
-        ///     How to handle stranded enums (enums appearing without search filters (i.e. key=value)).
-        ///     Set to Disabled to disallow any stranded enums
+        ///     How to handle singleton enums (enums appearing without search filters (i.e. key=value)).
+        ///     Set to Disabled to disallow any singleton enums
         /// </summary>
-        public StrandedEnumPolicy EnumPolicy { get; set; } = StrandedEnumPolicy.Default;
+        public SingletonEnumPolicy EnumPolicy { get; set; } = SingletonEnumPolicy.Default;
 
-        internal bool RequireCompleteStrandedEnum => EnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum);
+        internal bool RequireCompleteSingletonEnum => EnumPolicy.HasFlag(SingletonEnumPolicy.RequireCompleteEnum);
 
 
         public SearchCriterionConstraint SearchCriterionConstraint { get; set; } = _ => true;
@@ -37,10 +37,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
         public CombinationKindTransform CombinationKindTransform { get; set; } =
             (_, combinationKind) => combinationKind;
 
-        public StrandedEnumProcessor StrandedEnumProcessor { get; set; } = _ => [];
+        public SingletonEnumProcessor SingletonEnumProcessor { get; set; } = _ => [];
 
         public IReadOnlyList<SearchCriterion> SearchCriteria => _searchCriteria.AsReadOnly();
-        public IReadOnlyList<Expression> StrandedEnums => _strandedEnums.AsReadOnly();
+        public IReadOnlyList<Expression> SingletonEnums => _singletonEnums.AsReadOnly();
 
         internal Token Lookahead()
         {
@@ -95,14 +95,14 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return new TokenRange(startIndex, endIndex);
         }
 
-        internal bool ParseAtom(bool isStrandedValue, out AtomicValue value)
+        internal bool ParseAtom(bool isSingletonValue, out AtomicValue value)
         {
             PushIndex();
             var lookahead = Lookahead();
 
-            var success = !isStrandedValue && lookahead.TryCollapseKeyword(TokenKind.Enum, false)
+            var success = !isSingletonValue && lookahead.TryCollapseKeyword(TokenKind.Enum, false)
                           || lookahead.Kind.IsValue();
-            if (isStrandedValue && !lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteStrandedEnum))
+            if (isSingletonValue && !lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteSingletonEnum))
                 success = false;
 
             if (success)
@@ -118,11 +118,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
             return false;
         }
 
-        internal bool ParseExpression(bool isStrandedValue, out Expression expression)
+        internal bool ParseExpression(bool isSingletonValue, out Expression expression)
         {
             PushIndex();
 
-            var success = ParseAtom(isStrandedValue, out var startingValue);
+            var success = ParseAtom(isSingletonValue, out var startingValue);
             expression = startingValue;
 
             var combinationKind = ListCombinationKind.None;
@@ -141,7 +141,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                          || combinationKind == ListCombinationKind.Or && !Match(TokenKind.Or, out _))
                     break;
 
-                if (!ParseAtom(isStrandedValue, out var nextValue))
+                if (!ParseAtom(isSingletonValue, out var nextValue))
                 {
                     success = false;
                     break;
@@ -222,18 +222,18 @@ namespace WilliamQiufeng.SearchParser.Parsing
         {
             while (Lookahead() is var lookahead && lookahead.Kind != TokenKind.End)
             {
-                if (ParseExpression(true, out var strandedExpression))
+                if (ParseExpression(true, out var singletonExpression))
                 {
-                    _strandedEnums.Add(strandedExpression);
+                    _singletonEnums.Add(singletonExpression);
 
-                    // Generate search criteria using this stranded enum
-                    var generatedSearchCriteria = StrandedEnumProcessor(strandedExpression);
+                    // Generate search criteria using this singleton enum
+                    var generatedSearchCriteria = SingletonEnumProcessor(singletonExpression);
                     _searchCriteria.AddRange(generatedSearchCriteria);
 
-                    // If stranded enums should not be included in plain text terms
+                    // If singleton enums should not be included in plain text terms
                     // We mark them as included in criterion, so it will be skipped in GetPlainTextTerms()
-                    if (!EnumPolicy.HasFlag(StrandedEnumPolicy.IncludeInPlainText))
-                        MarkCriterionInclusion(strandedExpression.TokenRange, true);
+                    if (!EnumPolicy.HasFlag(SingletonEnumPolicy.IncludeInPlainText))
+                        MarkCriterionInclusion(singletonExpression.TokenRange, true);
                 }
                 else if (ParseSearchCriterion(out var range))
                 {
@@ -248,9 +248,9 @@ namespace WilliamQiufeng.SearchParser.Parsing
             Advance();
         }
 
-        private bool ValidateStrandedEnum(Token lookahead)
+        private bool ValidateSingletonEnum(Token lookahead)
         {
-            return EnumPolicy.HasFlag(StrandedEnumPolicy.RequireCompleteEnum) &&
+            return EnumPolicy.HasFlag(SingletonEnumPolicy.RequireCompleteEnum) &&
                    !lookahead.IsCompleteKeyword;
         }
 
