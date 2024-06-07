@@ -27,6 +27,11 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
         new object?[] { "length", TokenKind.Equal, "l", false },
     },
     new[] { "sec" })]
+// Strings
+[TestFixture(new[] { "title", "tag", "source" }, "\"hi\"", new object[]
+    {
+    },
+    new[] { "hi" }, true)]
 // Strings, invert
 [TestFixture(new[] { "title", "tag", "source" }, "t:\"except you\" !tag:\"> <\" is 'hello world'", new object[]
     {

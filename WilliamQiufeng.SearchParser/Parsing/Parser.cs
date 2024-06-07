@@ -265,8 +265,13 @@ namespace WilliamQiufeng.SearchParser.Parsing
             {
                 if (token.IncludedInCriterion || token.Kind is TokenKind.End or TokenKind.String)
                 {
+                    var isString = !token.IncludedInCriterion && token.Kind == TokenKind.String;
                     if (plainTextConversionStartToken == null)
+                    {
+                        if (isString)
+                            yield return token;
                         continue;
+                    }
 
                     var start = plainTextConversionStartToken.Offset;
                     var end = token.Offset - 1;
@@ -278,10 +283,8 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
                     plainTextConversionStartToken = null;
 
-                    if (!token.IncludedInCriterion && token.Kind == TokenKind.String)
-                    {
+                    if (isString)
                         yield return token;
-                    }
                 }
                 else
                 {
