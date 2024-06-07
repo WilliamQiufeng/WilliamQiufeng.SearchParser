@@ -53,6 +53,12 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             if (Kind == tokenKind) return true;
             if (Kind != TokenKind.Keyword) return false;
 
+            if (tokenKind == TokenKind.PlainText)
+            {
+                CollapseToPlainText();
+                return true;
+            }
+
             if (requireCompleteKeyword && !IsCompleteKeyword) return false;
 
             if (Value is not Trie trie) return false;
@@ -67,6 +73,12 @@ namespace WilliamQiufeng.SearchParser.Tokenizing
             }
 
             return false;
+        }
+
+        public void CollapseToPlainText()
+        {
+            Kind = TokenKind.PlainText;
+            Value = Segment.ToString();
         }
     }
 }

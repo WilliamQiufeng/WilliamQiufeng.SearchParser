@@ -18,12 +18,13 @@ namespace WilliamQiufeng.SearchParser.UnitTest;
     },
     new[] { "abc", "xyz" })]
 // Normal query
-[TestFixture(new[] { "difficulty", "length", "lns" }, "sec d<=25 d>=20 ln>25% l<2m25s", new object[]
+[TestFixture(new[] { "difficulty", "length", "lns" }, "sec d<=25 d>=20 ln>25% l<2m25s l=l", new object[]
     {
         new object[] { "difficulty", TokenKind.LessThanOrEqual, 25, false },
         new object[] { "difficulty", TokenKind.MoreThanOrEqual, 20, false },
         new object[] { "lns", TokenKind.MoreThan, 25, false },
         new object?[] { "length", TokenKind.LessThan, null, false },
+        new object?[] { "length", TokenKind.Equal, "l", false },
     },
     new[] { "sec" })]
 // Strings, invert

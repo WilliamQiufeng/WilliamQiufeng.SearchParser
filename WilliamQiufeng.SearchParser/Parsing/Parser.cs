@@ -94,8 +94,10 @@ namespace WilliamQiufeng.SearchParser.Parsing
             PushIndex();
             var lookahead = Lookahead();
 
-            var success = !isSingletonValue && lookahead.TryCollapseKeyword(TokenKind.Enum, false)
-                          || lookahead.Kind.IsValue();
+            var success =
+                !isSingletonValue && (lookahead.TryCollapseKeyword(TokenKind.Enum, false) ||
+                                      lookahead.TryCollapseKeyword(TokenKind.PlainText, false))
+                || lookahead.Kind.IsValue();
             if (isSingletonValue)
                 success = lookahead.TryCollapseKeyword(TokenKind.Enum, RequireCompleteSingletonEnum);
 
