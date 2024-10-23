@@ -17,7 +17,7 @@ public record ListCriterionAst(List<Ast> Elements, ListCombinationKind Combinati
             ListCombinationKind.And => Elements.TrueForAll(ast => ast.Evaluate(obj, predicate)),
             ListCombinationKind.Or => Elements.Exists(ast => ast.Evaluate(obj, predicate)),
             ListCombinationKind.None when Elements.Count == 1 => Elements[0].Evaluate(obj, predicate),
-            ListCombinationKind.None => throw new InvalidOperationException(),
+            ListCombinationKind.None => false,
             _ => throw new ArgumentOutOfRangeException()
         } ^ Invert;
     }
