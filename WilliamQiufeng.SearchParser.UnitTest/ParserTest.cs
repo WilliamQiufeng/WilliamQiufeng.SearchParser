@@ -166,6 +166,8 @@ public class ParserTest
                         Assert.That(criterion.Values[j].Value, Is.EqualTo(_targetCriteria[i].Values[j].Value));
                 }
 
+                Assert.That(criterion.Values.CombinationKind, Is.EqualTo(_targetCriteria[i].Values.CombinationKind));
+
                 Assert.That(criterion.Operator.Value, Is.EqualTo(_targetCriteria[i].Operator.Value));
                 Assert.That(criterion.Invert, Is.EqualTo(_targetCriteria[i].Invert));
             });

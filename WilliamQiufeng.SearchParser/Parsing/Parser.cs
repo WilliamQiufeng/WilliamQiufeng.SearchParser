@@ -153,6 +153,7 @@ namespace WilliamQiufeng.SearchParser.Parsing
                 listValue.Add(nextValue);
             }
 
+            listValue.CombinationKind = combinationKind;
             listValue.TokenRange = PopIndex();
             return success;
         }
