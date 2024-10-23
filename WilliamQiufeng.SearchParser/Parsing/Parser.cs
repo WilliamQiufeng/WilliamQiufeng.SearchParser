@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WilliamQiufeng.SearchParser.AST;
 using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing
@@ -248,6 +249,22 @@ namespace WilliamQiufeng.SearchParser.Parsing
             }
 
             Advance();
+        }
+
+        public Ast GetAst()
+        {
+            var terms = GetPlainTextTerms().ToArray();
+            var criteria = SearchCriteria;
+            var rootCriteria = new ListCriterionAst(
+                criteria.Select(x => x.Flatten()).Cast<Ast>()
+                    .Concat(terms.Select(t =>
+                        new AtomCriterionAst(
+                            new Token(TokenKind.PlainText),
+                            new Token(TokenKind.Contains),
+                            new AtomicValue(t)))).ToList(),
+                ListCombinationKind.And,
+                false);
+            return rootCriteria;
         }
 
         private void MarkCriterionInclusion(TokenRange range, bool success)

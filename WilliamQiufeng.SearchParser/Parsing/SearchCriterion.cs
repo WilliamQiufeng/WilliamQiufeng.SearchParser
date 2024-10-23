@@ -1,3 +1,5 @@
+using System.Linq;
+using WilliamQiufeng.SearchParser.AST;
 using WilliamQiufeng.SearchParser.Tokenizing;
 
 namespace WilliamQiufeng.SearchParser.Parsing
@@ -22,5 +24,11 @@ namespace WilliamQiufeng.SearchParser.Parsing
 
         public ListValue Values { get; } = values;
         public bool Invert { get; } = invert;
+
+        public ListCriterionAst Flatten()
+        {
+            return new ListCriterionAst(Values.Select(Ast (v) => new AtomCriterionAst(Key, Operator, v)).ToList(),
+                Values.CombinationKind, Invert);
+        }
     }
 }
